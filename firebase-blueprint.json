@@ -1,0 +1,131 @@
+{
+  "entities": {
+    "Owner": {
+      "title": "Owner Profile",
+      "description": "Bus owner profile with plan type and financial summary",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "companyName": { "type": "string" },
+        "planType": { "type": "string" },
+        "activeBusesCount": { "type": "number" },
+        "todayRevenue": { "type": "number" },
+        "walletBalance": { "type": "number" },
+        "saasFeePerBus": { "type": "number" },
+        "nextPayoutDate": { "type": "string" },
+        "nextPayoutAmount": { "type": "number" },
+        "avgDailyRiders": { "type": "number" },
+        "city": { "type": "string" },
+        "phone": { "type": "string" }
+      }
+    },
+    "Bus": {
+      "title": "Bus Vehicle",
+      "description": "Bus vehicle record in owner fleet",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "regNumber": { "type": "string" },
+        "model": { "type": "string" },
+        "capacity": { "type": "number" },
+        "lastServiceDate": { "type": "string" },
+        "nextServiceDue": { "type": "string" },
+        "status": { "type": "string" },
+        "routeAssigned": { "type": "string" },
+        "monthlyLeasePayout": { "type": "number" }
+      }
+    },
+    "Route": {
+      "title": "SaaS Route",
+      "description": "Configured intercity or suburban bus route",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "routeName": { "type": "string" },
+        "origin": { "type": "string" },
+        "destination": { "type": "string" },
+        "distanceKm": { "type": "number" },
+        "fixedCharge": { "type": "number" },
+        "ratePerKm": { "type": "number" },
+        "computedFare": { "type": "number" },
+        "tripsPerDay": { "type": "number" }
+      }
+    },
+    "EarningsEntry": {
+      "title": "Daily Earnings Entry",
+      "description": "Daily ticket revenue record with channel breakdown",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "day": { "type": "string" },
+        "date": { "type": "string" },
+        "ticketRevenue": { "type": "number" },
+        "cashAmount": { "type": "number" },
+        "upiAmount": { "type": "number" },
+        "cardAmount": { "type": "number" }
+      }
+    },
+    "PayoutEntry": {
+      "title": "Lease Payout Entry",
+      "description": "Monthly guaranteed payout history entry",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "payoutDate": { "type": "string" },
+        "amount": { "type": "number" },
+        "status": { "type": "string" },
+        "transactionId": { "type": "string" },
+        "busCount": { "type": "number" }
+      }
+    },
+    "MaintenanceRecord": {
+      "title": "Maintenance Log Record",
+      "description": "Vehicle service and repair audit record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "busId": { "type": "string" },
+        "busReg": { "type": "string" },
+        "serviceType": { "type": "string" },
+        "serviceDate": { "type": "string" },
+        "nextDueDate": { "type": "string" },
+        "cost": { "type": "number" },
+        "mechanicShop": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "/owners/{ownerId}": {
+      "schema": "Owner",
+      "description": "Owner profile data"
+    },
+    "/buses/{busId}": {
+      "schema": "Bus",
+      "description": "Owner fleet buses"
+    },
+    "/routes/{routeId}": {
+      "schema": "Route",
+      "description": "Owner routes for SaaS calculation"
+    },
+    "/earnings/{entryId}": {
+      "schema": "EarningsEntry",
+      "description": "SaaS daily revenue collection logs"
+    },
+    "/payouts/{payoutId}": {
+      "schema": "PayoutEntry",
+      "description": "Lease monthly payout records"
+    },
+    "/maintenance/{maintId}": {
+      "schema": "MaintenanceRecord",
+      "description": "Bus maintenance and service records"
+    }
+  }
+}

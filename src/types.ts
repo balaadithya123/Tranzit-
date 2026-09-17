@@ -1,0 +1,88 @@
+export type PlanType = 'SaaS' | 'Lease';
+
+export type ServiceStatus = 'Good' | 'Due' | 'Overdue';
+
+export interface OwnerProfile {
+  id: string; // matches auth UID or owner document ID
+  uid: string;
+  name: string;
+  email: string;
+  companyName: string;
+  planType: PlanType;
+  activeBusesCount: number;
+  todayRevenue: number; // for SaaS
+  walletBalance?: number; // for SaaS pending payout wallet
+  saasFeePerBus?: number; // e.g. 4500/bus/mo
+  nextPayoutDate: string; // for Lease & SaaS settlement
+  nextPayoutAmount: number; // for Lease & SaaS settlement
+  avgDailyRiders: number;
+  city: string;
+  phone?: string;
+  createdAt?: string;
+}
+
+export interface Bus {
+  id: string;
+  ownerId: string;
+  regNumber: string; // e.g. KA 01 F 4291
+  model: string; // e.g. Ashok Leyland Viking 52s
+  capacity: number; // e.g. 48
+  routeAssigned: string; // e.g. "Bengaluru - Mysuru"
+  lastServiceDate: string; // YYYY-MM-DD
+  nextServiceDue: string; // YYYY-MM-DD
+  status: 'Active' | 'In Maintenance' | 'Idle';
+  driverName?: string;
+  onTimePercent?: number; // e.g. 94 (94%)
+  fuelEfficiencyScore?: number; // e.g. 88 (88/100)
+  fuelIncentiveCredit?: number; // e.g. 2000 (₹2,000 credit)
+  aiIncentiveRationale?: string; // cached or live generated rationale
+  leaseValue?: number; // monthly payout e.g. 85000 (if Lease)
+  renewalDate?: string; // YYYY-MM-DD (if Lease)
+}
+
+export interface RouteItem {
+  id: string;
+  ownerId: string;
+  routeName: string; // e.g. "Bengaluru → Mysuru Express"
+  origin: string;
+  destination: string;
+  distanceKm: number;
+  fixedCharge: number; // base charge ₹
+  ratePerKm: number; // ₹ / km
+  computedFare: number; // recalculated live: (distanceKm * ratePerKm) + fixedCharge
+  tripsPerDay: number;
+}
+
+export interface EarningsEntry {
+  id: string;
+  ownerId: string;
+  day: string; // "Mon", "Tue", etc.
+  date: string; // YYYY-MM-DD
+  ticketRevenue: number;
+  cashAmount: number;
+  upiAmount: number;
+  cardAmount: number;
+}
+
+export interface PayoutEntry {
+  id: string;
+  ownerId: string;
+  date: string; // YYYY-MM-DD
+  amount: number;
+  status: 'Paid' | 'Scheduled' | 'Processing';
+  referenceNo: string;
+  bankAccount: string;
+}
+
+export interface MaintenanceRecord {
+  id: string;
+  ownerId: string;
+  busId: string;
+  busReg: string;
+  serviceType: string;
+  serviceDate: string;
+  nextDueDate: string;
+  cost: number;
+  notes: string;
+  mechanicShop?: string;
+}
