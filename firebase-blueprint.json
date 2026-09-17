@@ -100,6 +100,35 @@
         "mechanicShop": { "type": "string" },
         "notes": { "type": "string" }
       }
+    },
+    "Driver": {
+      "title": "Driver Profile",
+      "description": "Bus driver profile, commercial license validity, and route assignment",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "employeeId": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "emergencyContact": { "type": "string" },
+        "bloodGroup": { "type": "string" },
+        "status": { "type": "string" },
+        "licenseNumber": { "type": "string" },
+        "licenseType": { "type": "string" },
+        "badgeNumber": { "type": "string" },
+        "licenseExpiryDate": { "type": "string" },
+        "assignedBusId": { "type": "string" },
+        "assignedBusReg": { "type": "string" },
+        "assignedRouteId": { "type": "string" },
+        "assignedRouteName": { "type": "string" },
+        "shiftTiming": { "type": "string" },
+        "experienceYears": { "type": "number" },
+        "joiningDate": { "type": "string" },
+        "safetyScore": { "type": "number" },
+        "tripsCompleted": { "type": "number" },
+        "notes": { "type": "string" }
+      }
     }
   },
   "firestore": {
@@ -126,6 +155,10 @@
     "/maintenance/{maintId}": {
       "schema": "MaintenanceRecord",
       "description": "Bus maintenance and service records"
+    },
+    "/drivers/{driverId}": {
+      "schema": "Driver",
+      "description": "Driver profiles and license compliance"
     }
   }
 }

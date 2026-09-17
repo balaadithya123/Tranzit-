@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { OwnerProfile } from '../types';
-import { Bus, LogOut, Sparkles, Building2, Ticket, Wallet, Wrench, LayoutDashboard, MapPin, Edit3, Fuel } from 'lucide-react';
+import { Bus, LogOut, Sparkles, Building2, Ticket, Wallet, Wrench, LayoutDashboard, MapPin, Edit3, Fuel, FileText, Download, UserCheck } from 'lucide-react';
 import { EditProfileModal } from './EditProfileModal';
+import { ReportsModal } from './ReportsModal';
 
 interface NavbarProps {
   owner: OwnerProfile;
@@ -17,6 +18,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onLogout
 }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isReportsModalOpen, setIsReportsModalOpen] = useState(false);
   const isSaaS = owner.planType === 'SaaS';
 
   const accentColorClass = isSaaS 
@@ -56,6 +58,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span>{isSaaS ? 'SaaS Subscription' : 'Fleet Lease'}</span>
               </div>
 
+              {/* Export Reports Button */}
+              <button
+                onClick={() => setIsReportsModalOpen(true)}
+                className="flex items-center space-x-1.5 px-2.5 py-1 bg-white border border-[#E8E4DC] hover:border-amber-600 hover:text-amber-900 text-xs font-mono text-slate-700 rounded-xs transition-colors cursor-pointer group"
+                title="Generate and download monthly earnings and maintenance PDF reports"
+              >
+                <FileText className="w-3.5 h-3.5 text-amber-700 group-hover:scale-110 transition-transform" />
+                <span className="font-bold">Reports (PDF)</span>
+              </button>
+
               {/* Hub City Quick Badge Button */}
               <button
                 onClick={() => setIsEditModalOpen(true)}
@@ -73,7 +85,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <Building2 className="w-3.5 h-3.5 text-slate-500 mr-1" />
                   {owner.companyName || owner.name}
                 </span>
-                <span className="text-[11px] text-slate-500 font-mono">{owner.activeBusesCount || 3} Buses Enrolled</span>
+                <span className="text-[11px] text-slate-500 font-mono">{(owner.activeBusesCount ?? 3)} Buses Enrolled</span>
               </div>
 
               {/* Logout */}
@@ -127,18 +139,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <Wallet className="w-3.5 h-3.5" />
                   <span>Earnings & Wallet</span>
                 </button>
-
-                <button
-                  onClick={() => setActiveTab('fuel-perks')}
-                  className={`px-3 py-1.5 text-xs font-medium uppercase tracking-wider border transition-all flex items-center space-x-1.5 rounded-xs whitespace-nowrap cursor-pointer ${
-                    activeTab === 'fuel-perks'
-                      ? activeTabClass
-                      : 'border-transparent text-slate-600 hover:text-[#1A1F2C] hover:border-[#E8E4DC] bg-white/50'
-                  }`}
-                >
-                  <Fuel className="w-3.5 h-3.5 text-amber-700" />
-                  <span>Fuel & Perks (AI)</span>
-                </button>
               </>
             ) : (
               <button
@@ -155,6 +155,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
 
             <button
+              onClick={() => setActiveTab('fuel-perks')}
+              className={`px-3 py-1.5 text-xs font-medium uppercase tracking-wider border transition-all flex items-center space-x-1.5 rounded-xs whitespace-nowrap cursor-pointer ${
+                activeTab === 'fuel-perks'
+                  ? activeTabClass
+                  : 'border-transparent text-slate-600 hover:text-[#1A1F2C] hover:border-[#E8E4DC] bg-white/50'
+              }`}
+            >
+              <Fuel className="w-3.5 h-3.5 text-amber-700" />
+              <span>Fuel & Perks (AI)</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('fleet')}
               className={`px-3 py-1.5 text-xs font-medium uppercase tracking-wider border transition-all flex items-center space-x-1.5 rounded-xs whitespace-nowrap cursor-pointer ${
                 activeTab === 'fleet'
@@ -165,6 +177,18 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Wrench className="w-3.5 h-3.5 text-slate-700" />
               <span>Fleet & Maintenance</span>
             </button>
+
+            <button
+              onClick={() => setActiveTab('drivers')}
+              className={`px-3 py-1.5 text-xs font-medium uppercase tracking-wider border transition-all flex items-center space-x-1.5 rounded-xs whitespace-nowrap cursor-pointer ${
+                activeTab === 'drivers'
+                  ? activeTabClass
+                  : 'border-transparent text-slate-600 hover:text-[#1A1F2C] hover:border-[#E8E4DC] bg-white/50'
+              }`}
+            >
+              <UserCheck className="w-3.5 h-3.5 text-amber-700" />
+              <span>Drivers & Roster</span>
+            </button>
           </nav>
         </div>
       </header>
@@ -174,6 +198,13 @@ export const Navbar: React.FC<NavbarProps> = ({
         owner={owner}
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
+      />
+
+      {/* Monthly Reports Export Modal */}
+      <ReportsModal
+        owner={owner}
+        isOpen={isReportsModalOpen}
+        onClose={() => setIsReportsModalOpen(false)}
       />
     </>
   );

@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { OwnerProfile, Bus, MaintenanceRecord } from '../types';
 import { collection, query, where, onSnapshot, doc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { getServiceStatus, formatINR } from '../lib/utils';
-import { Wrench, Calendar, AlertTriangle, CheckCircle2, Clock, Plus, Edit2, Bus as BusIcon, X, Check, Filter, Trash2, ShieldCheck } from 'lucide-react';
+import { getServiceStatus, formatINR, downloadCSV } from '../lib/utils';
+import { CopyButton } from './CopyButton';
+import { Wrench, Calendar, AlertTriangle, CheckCircle2, Clock, Plus, Bus as BusIcon, X, Check, Filter, Trash2, Download, FileSpreadsheet, Search } from 'lucide-react';
+import { ReportsModal } from './ReportsModal';
 
 interface FleetMaintenanceViewProps {
   owner: OwnerProfile;
@@ -13,7 +15,9 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
   const [buses, setBuses] = useState<Bus[]>([]);
   const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>([]);
   const [statusFilter, setStatusFilter] = useState<'All' | 'Good' | 'Due' | 'Overdue'>('All');
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [isReportsModalOpen, setIsReportsModalOpen] = useState(false);
 
   // Modal State for Logging Maintenance / Updating Service Date
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
@@ -84,14 +88,38 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
 
   const isSaaS = owner.planType === 'SaaS';
 
-  // Open Service Log Modal for a bus
+  const handleExportCSV = () => {
+    const headers = [
+      'Bus Registration',
+      'Model',
+      'Capacity',
+      'Assigned Route',
+      'Last Service Date',
+      'Next Service Due',
+      'Status'
+    ];
+
+    const rows = buses.map((b) => [
+      b.regNumber,
+      b.model,
+      b.capacity,
+      b.routeAssigned || 'Unassigned',
+      b.lastServiceDate || 'N/A',
+      b.nextServiceDue,
+      getServiceStatus(b.nextServiceDue)
+    ]);
+
+    downloadCSV(`tranzit_fleet_${new Date().toISOString().split('T')[0]}.csv`, headers, rows);
+  };
+
   const handleOpenLogModal = (bus: Bus) => {
     setSelectedBus(bus);
-    setServiceDate(new Date().toISOString().split('T')[0]);
-    
-    // Auto calculate default next due date (+60 days)
+    const today = new Date().toISOString().split('T')[0];
+    setServiceDate(today);
+
+    // Calculate default next due (3 months from today)
     const next = new Date();
-    next.setDate(next.getDate() + 60);
+    next.setMonth(next.getMonth() + 3);
     setNextDueDate(next.toISOString().split('T')[0]);
 
     setIsLogModalOpen(true);
@@ -116,10 +144,8 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
       notes
     };
 
-    // 1. Write maintenance entry
     await setDoc(doc(db, 'maintenance', mid), newRecord);
 
-    // 2. Update bus document in Firestore (lastServiceDate, nextServiceDue, status)
     await updateDoc(doc(db, 'buses', selectedBus.id), {
       lastServiceDate: serviceDate,
       nextServiceDue: nextDueDate,
@@ -151,16 +177,13 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
       fuelIncentiveCredit: Number(newIncentiveCredit)
     };
 
-    // 1. Create Bus document in Firestore
     await setDoc(doc(db, 'buses', newBusId), busData);
 
-    // 2. Sync owner's activeBusesCount in Firestore
     await updateDoc(doc(db, 'owners', owner.id), {
       activeBusesCount: buses.length + 1
     });
 
     setIsAddBusModalOpen(false);
-    // Reset random reg number generator for next time
     setNewRegNumber('KA 01 FA ' + Math.floor(1000 + Math.random() * 9000));
   };
 
@@ -168,10 +191,8 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
   const handleDeleteBus = async (busId: string, regNum: string) => {
     if (!window.confirm(`Are you sure you want to remove bus ${regNum} from your fleet?`)) return;
 
-    // 1. Delete Bus document from Firestore
     await deleteDoc(doc(db, 'buses', busId));
 
-    // 2. Sync owner's activeBusesCount in Firestore
     await updateDoc(doc(db, 'owners', owner.id), {
       activeBusesCount: Math.max(0, buses.length - 1)
     });
@@ -180,40 +201,56 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
   // Filtered Buses
   const filteredBuses = buses.filter((bus) => {
     const status = getServiceStatus(bus.nextServiceDue);
-    if (statusFilter === 'All') return true;
-    return status === statusFilter;
+    const matchesFilter = statusFilter === 'All' || status === statusFilter;
+    const matchesSearch = !searchQuery || 
+      bus.regNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      bus.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (bus.routeAssigned && bus.routeAssigned.toLowerCase().includes(searchQuery.toLowerCase()));
+    return matchesFilter && matchesSearch;
   });
 
   return (
     <div className="space-y-6">
-      {/* Editorial Header */}
-      <div className="bg-white border border-[#E8E4DC] p-6 rounded-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Header */}
+      <div className="bg-white dark:bg-[#121826] border border-slate-200 dark:border-slate-800/90 p-5 sm:p-6 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs transition-colors">
         <div>
-          <div className="flex items-center space-x-2 text-xs font-mono uppercase tracking-widest mb-1 text-slate-600">
-            <Wrench className="w-3.5 h-3.5" />
+          <div className="flex items-center space-x-2 text-xs font-mono uppercase tracking-widest mb-1 text-slate-500 dark:text-slate-400">
+            <Wrench className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
             <span>Vehicle Health & Maintenance Audit</span>
           </div>
-          <h2 className="text-2xl font-extrabold text-[#1A1F2C] tracking-tight">
+          <h2 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
             Fleet Vehicles & Service Schedules
           </h2>
-          <p className="text-xs text-slate-500 font-sans mt-0.5">
-            Service status badges are dynamically computed from service due dates. Update logs to recalculate health badges in Firestore.
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-sans mt-0.5">
+            Service status badges are dynamically calculated from service due dates. Update logs to sync vehicle health in Firestore.
           </p>
         </div>
 
-        {/* Right Actions: Filter & Add Bus */}
+        {/* Right Actions: Search, Filter, Export & Add Bus */}
         <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          {/* Quick Search */}
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search bus..."
+              className="pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-amber-500"
+            />
+          </div>
+
           {/* Status Filter Toggle Pills */}
-          <div className="flex items-center space-x-1.5 bg-[#FBF9F5] p-1 border border-[#E8E4DC] rounded-xs">
-            <Filter className="w-3.5 h-3.5 text-slate-400 ml-1.5 mr-0.5" />
+          <div className="flex items-center space-x-1 bg-slate-100 dark:bg-slate-900/80 p-1 border border-slate-200 dark:border-slate-700 rounded-lg">
+            <Filter className="w-3.5 h-3.5 text-slate-400 ml-1 mr-0.5" />
             {(['All', 'Good', 'Due', 'Overdue'] as const).map((st) => (
               <button
                 key={st}
                 onClick={() => setStatusFilter(st)}
-                className={`px-2.5 py-1 text-[11px] font-mono font-bold uppercase transition-colors rounded-xs ${
+                className={`px-2.5 py-1 text-[11px] font-mono font-bold uppercase transition-colors rounded-md cursor-pointer ${
                   statusFilter === st
-                    ? 'bg-[#1A1F2C] text-[#FBF9F5]'
-                    : 'text-slate-600 hover:text-[#1A1F2C]'
+                    ? 'bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
                 }`}
               >
                 {st}
@@ -222,30 +259,48 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
           </div>
 
           <button
-            onClick={() => setIsAddBusModalOpen(true)}
-            className="px-3.5 py-2 bg-[#1A1F2C] hover:bg-[#0F131D] text-white text-xs font-mono font-bold uppercase rounded-xs transition-colors flex items-center space-x-1.5 cursor-pointer shadow-xs"
+            onClick={handleExportCSV}
+            className="px-3 py-1.5 border border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-xs font-mono font-bold uppercase rounded-lg transition-colors flex items-center space-x-1.5 cursor-pointer shadow-2xs"
+            title="Export Fleet and Maintenance records as CSV"
           >
-            <Plus className="w-4 h-4 text-amber-400" />
-            <span>Add Bus to Fleet</span>
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>CSV</span>
+          </button>
+
+          <button
+            onClick={() => setIsReportsModalOpen(true)}
+            className="px-3 py-1.5 border border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-xs font-mono font-bold uppercase rounded-lg transition-colors flex items-center space-x-1.5 cursor-pointer shadow-2xs"
+            title="Generate and download maintenance records PDF report"
+          >
+            <Download className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+            <span>PDF</span>
+          </button>
+
+          <button
+            onClick={() => setIsAddBusModalOpen(true)}
+            className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-amber-500 dark:hover:bg-amber-400 text-white dark:text-slate-950 text-xs font-mono font-bold uppercase rounded-lg transition-colors flex items-center space-x-1.5 cursor-pointer shadow-xs"
+          >
+            <Plus className="w-4 h-4 text-amber-400 dark:text-slate-950" />
+            <span>Add Bus</span>
           </button>
         </div>
       </div>
 
-      {/* Fleet Vehicles Table */}
-      <div className="bg-white border border-[#E8E4DC] rounded-xs overflow-hidden">
-        <div className="p-4 border-b border-[#E8E4DC] bg-[#FBF9F5] flex items-center justify-between">
-          <span className="text-xs font-mono uppercase font-bold text-slate-700">
+      {/* Fleet Vehicles Table Card */}
+      <div className="bg-white dark:bg-[#121826] border border-slate-200 dark:border-slate-800/90 rounded-xl overflow-hidden shadow-xs transition-colors">
+        <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/40 flex items-center justify-between">
+          <span className="text-xs font-mono uppercase font-bold text-slate-900 dark:text-slate-100">
             Registered Vehicles ({filteredBuses.length})
           </span>
-          <span className="text-[11px] font-mono text-slate-500">
-            Dynamic Badge Computation Engine
+          <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+            Dynamic Badge Engine Active
           </span>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-[#E8E4DC] bg-[#FBF9F5] text-[11px] font-mono uppercase text-slate-500">
+              <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20 text-[11px] font-mono uppercase text-slate-500 dark:text-slate-400">
                 <th className="py-3 px-4">Registration #</th>
                 <th className="py-3 px-4">Bus Model & Capacity</th>
                 <th className="py-3 px-4">Assigned Route</th>
@@ -255,10 +310,10 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#E8E4DC] text-xs">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 text-xs">
               {filteredBuses.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-400 font-mono">
+                  <td colSpan={7} className="py-8 text-center text-slate-400 dark:text-slate-500 font-mono">
                     No vehicles match the selected filter.
                   </td>
                 </tr>
@@ -267,43 +322,46 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
                   const status = getServiceStatus(bus.nextServiceDue);
 
                   return (
-                    <tr key={bus.id} className="hover:bg-[#FBF9F5]">
+                    <tr key={bus.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
                       {/* Registration */}
-                      <td className="py-3.5 px-4 font-mono font-bold text-sm text-[#1A1F2C]">
-                        {bus.regNumber}
+                      <td className="py-3.5 px-4 font-mono font-bold text-sm text-slate-900 dark:text-slate-100">
+                        <div className="flex items-center space-x-1.5">
+                          <span>{bus.regNumber}</span>
+                          <CopyButton textToCopy={bus.regNumber} label={bus.regNumber} />
+                        </div>
                       </td>
 
                       {/* Model & Seats */}
                       <td className="py-3.5 px-4">
-                        <div className="font-semibold text-[#1A1F2C]">{bus.model}</div>
-                        <div className="text-[10px] font-mono text-slate-500">{bus.capacity} Passengers</div>
+                        <div className="font-semibold text-slate-900 dark:text-slate-100">{bus.model}</div>
+                        <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{bus.capacity} Passengers</div>
                       </td>
 
                       {/* Route */}
-                      <td className="py-3.5 px-4 text-slate-700 font-sans">
+                      <td className="py-3.5 px-4 text-slate-700 dark:text-slate-300 font-sans">
                         {bus.routeAssigned || 'Unassigned'}
                       </td>
 
                       {/* Last Service */}
-                      <td className="py-3.5 px-4 font-mono text-slate-600">
+                      <td className="py-3.5 px-4 font-mono text-slate-600 dark:text-slate-400">
                         {bus.lastServiceDate || 'N/A'}
                       </td>
 
                       {/* Next Service Due */}
-                      <td className="py-3.5 px-4 font-mono font-bold text-[#1A1F2C]">
+                      <td className="py-3.5 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">
                         {bus.nextServiceDue}
                       </td>
 
                       {/* Status Badge */}
                       <td className="py-3.5 px-4">
-                        <span className={`px-2.5 py-1 text-[10px] font-mono font-bold uppercase rounded-xs border inline-flex items-center space-x-1 ${
-                          status === 'Good' ? 'bg-emerald-100 text-emerald-900 border-emerald-300' :
-                          status === 'Due' ? 'bg-amber-100 text-amber-900 border-amber-300' :
-                          'bg-red-100 text-red-900 border-red-300'
+                        <span className={`px-2.5 py-1 text-[10px] font-mono font-bold uppercase rounded-md border inline-flex items-center space-x-1 ${
+                          status === 'Good' ? 'bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border-emerald-500/20' :
+                          status === 'Due' ? 'bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/20' :
+                          'bg-red-500/10 text-red-800 dark:text-red-300 border-red-500/20'
                         }`}>
-                          {status === 'Good' && <CheckCircle2 className="w-3 h-3 text-emerald-700" />}
-                          {status === 'Due' && <Clock className="w-3 h-3 text-amber-700" />}
-                          {status === 'Overdue' && <AlertTriangle className="w-3 h-3 text-red-700" />}
+                          {status === 'Good' && <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />}
+                          {status === 'Due' && <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400" />}
+                          {status === 'Overdue' && <AlertTriangle className="w-3 h-3 text-red-600 dark:text-red-400" />}
                           <span>{status}</span>
                         </span>
                       </td>
@@ -313,19 +371,15 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
                         <div className="flex items-center justify-end space-x-1.5">
                           <button
                             onClick={() => handleOpenLogModal(bus)}
-                            className={`px-3 py-1.5 font-mono text-[11px] font-bold uppercase rounded-xs transition-colors border flex items-center space-x-1 cursor-pointer ${
-                              isSaaS
-                                ? 'bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-300'
-                                : 'bg-teal-50 hover:bg-teal-100 text-teal-900 border-teal-300'
-                            }`}
+                            className="px-2.5 py-1 font-mono text-[11px] font-bold uppercase rounded-md transition-colors border flex items-center space-x-1 cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700"
                           >
-                            <Wrench className="w-3 h-3" />
+                            <Wrench className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                             <span>Log Service</span>
                           </button>
 
                           <button
                             onClick={() => handleDeleteBus(bus.id, bus.regNumber)}
-                            className="p-1.5 text-slate-400 hover:text-red-700 hover:bg-red-50 border border-transparent hover:border-red-200 rounded-xs transition-colors cursor-pointer"
+                            className="p-1 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-md transition-colors cursor-pointer"
                             title="Remove Bus from Fleet"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -342,18 +396,28 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
       </div>
 
       {/* Maintenance History Log */}
-      <div className="bg-white border border-[#E8E4DC] rounded-xs overflow-hidden">
-        <div className="p-4 border-b border-[#E8E4DC] bg-[#FBF9F5] flex items-center justify-between">
-          <span className="text-xs font-mono uppercase font-bold text-slate-700">
-            Service & Maintenance Audit Logs ({maintenanceRecords.length})
-          </span>
-          <span className="text-[11px] font-mono text-slate-500">Firestore `maintenance` collection</span>
+      <div className="bg-white dark:bg-[#121826] border border-slate-200 dark:border-slate-800/90 rounded-xl overflow-hidden shadow-xs transition-colors">
+        <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/40 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <span className="text-xs font-mono uppercase font-bold text-slate-900 dark:text-slate-100 block">
+              Service & Maintenance Audit Logs ({maintenanceRecords.length})
+            </span>
+            <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">Firestore `maintenance` collection</span>
+          </div>
+
+          <button
+            onClick={() => setIsReportsModalOpen(true)}
+            className="px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-mono font-bold uppercase rounded-lg transition-colors flex items-center space-x-1.5 cursor-pointer shadow-2xs"
+          >
+            <Download className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+            <span>Export Report (PDF)</span>
+          </button>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-[#E8E4DC] bg-[#FBF9F5] text-[11px] font-mono uppercase text-slate-500">
+              <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20 text-[11px] font-mono uppercase text-slate-500 dark:text-slate-400">
                 <th className="py-3 px-4">Service Date</th>
                 <th className="py-3 px-4">Bus Registration</th>
                 <th className="py-3 px-4">Service Performed</th>
@@ -362,25 +426,25 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
                 <th className="py-3 px-4">Mechanic Notes</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#E8E4DC] text-xs">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 text-xs">
               {maintenanceRecords.map((m) => (
-                <tr key={m.id} className="hover:bg-[#FBF9F5]">
-                  <td className="py-3.5 px-4 font-mono font-bold text-[#1A1F2C]">
+                <tr key={m.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
+                  <td className="py-3.5 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">
                     {m.serviceDate}
                   </td>
-                  <td className="py-3.5 px-4 font-mono font-bold text-amber-900">
+                  <td className="py-3.5 px-4 font-mono font-bold text-amber-700 dark:text-amber-400">
                     {m.busReg}
                   </td>
-                  <td className="py-3.5 px-4 font-semibold text-[#1A1F2C]">
+                  <td className="py-3.5 px-4 font-semibold text-slate-900 dark:text-slate-100">
                     {m.serviceType}
                   </td>
-                  <td className="py-3.5 px-4 text-slate-600 font-sans">
+                  <td className="py-3.5 px-4 text-slate-600 dark:text-slate-400 font-sans">
                     {m.mechanicShop || 'Tranzit Workshop'}
                   </td>
-                  <td className="py-3.5 px-4 font-mono font-bold text-slate-900">
+                  <td className="py-3.5 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">
                     {formatINR(m.cost)}
                   </td>
-                  <td className="py-3.5 px-4 text-slate-500 font-sans max-w-xs truncate">
+                  <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400 font-sans max-w-xs truncate">
                     {m.notes}
                   </td>
                 </tr>
@@ -392,20 +456,20 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
 
       {/* Log Service Modal */}
       {isLogModalOpen && selectedBus && (
-        <div className="fixed inset-0 z-50 bg-[#1A1F2C]/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white border border-[#E8E4DC] max-w-lg w-full p-6 rounded-xs shadow-xl animate-in fade-in">
-            <div className="flex items-center justify-between pb-3 border-b border-[#E8E4DC] mb-4">
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#121826] border border-slate-200 dark:border-slate-800 max-w-lg w-full p-6 rounded-xl shadow-2xl animate-in fade-in transition-colors">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 mb-4">
               <div>
-                <h3 className="text-base font-extrabold text-[#1A1F2C]">
+                <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100">
                   Log Maintenance & Update Service Due
                 </h3>
-                <p className="text-xs font-mono text-amber-800 font-bold">
+                <p className="text-xs font-mono text-amber-700 dark:text-amber-400 font-bold">
                   Bus: {selectedBus.regNumber} ({selectedBus.model})
                 </p>
               </div>
               <button
                 onClick={() => setIsLogModalOpen(false)}
-                className="p-1 text-slate-400 hover:text-slate-800"
+                className="p-1 text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -413,7 +477,7 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
 
             <form onSubmit={handleSaveMaintenance} className="space-y-4">
               <div>
-                <label className="block text-xs font-mono uppercase text-slate-600 mb-1">
+                <label className="block text-xs font-mono uppercase text-slate-600 dark:text-slate-400 mb-1">
                   Service / Repair Title
                 </label>
                 <input
@@ -422,13 +486,13 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
                   value={serviceType}
                   onChange={(e) => setServiceType(e.target.value)}
                   placeholder="e.g. Oil Change & Brake Pad Replacement"
-                  className="w-full px-3 py-2 text-xs border border-[#E8E4DC] rounded-xs bg-[#FBF9F5]"
+                  className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-mono uppercase text-slate-600 mb-1">
+                  <label className="block text-xs font-mono uppercase text-slate-600 dark:text-slate-400 mb-1">
                     Service Date (Performed)
                   </label>
                   <input
@@ -436,11 +500,11 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
                     required
                     value={serviceDate}
                     onChange={(e) => setServiceDate(e.target.value)}
-                    className="w-full px-3 py-2 text-xs font-mono border border-[#E8E4DC] rounded-xs bg-[#FBF9F5]"
+                    className="w-full px-3 py-2 text-xs font-mono border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-mono uppercase text-slate-600 mb-1">
+                  <label className="block text-xs font-mono uppercase text-slate-600 dark:text-slate-400 mb-1">
                     Next Service Due Date
                   </label>
                   <input
@@ -448,61 +512,61 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
                     required
                     value={nextDueDate}
                     onChange={(e) => setNextDueDate(e.target.value)}
-                    className="w-full px-3 py-2 text-xs font-mono border border-[#E8E4DC] rounded-xs bg-white font-bold text-amber-900 border-amber-300"
+                    className="w-full px-3 py-2 text-xs font-mono border border-amber-300 dark:border-amber-600 rounded-lg bg-amber-50 dark:bg-amber-950/30 font-bold text-amber-900 dark:text-amber-300 focus:outline-none"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-mono uppercase text-slate-600 mb-1">Service Cost (₹)</label>
+                  <label className="block text-xs font-mono uppercase text-slate-600 dark:text-slate-400 mb-1">Service Cost (₹)</label>
                   <input
                     type="number"
                     required
                     min={0}
                     value={cost}
                     onChange={(e) => setCost(Number(e.target.value))}
-                    className="w-full px-3 py-2 text-xs font-mono border border-[#E8E4DC] rounded-xs bg-[#FBF9F5]"
+                    className="w-full px-3 py-2 text-xs font-mono border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-mono uppercase text-slate-600 mb-1">Workshop / Mechanic</label>
+                  <label className="block text-xs font-mono uppercase text-slate-600 dark:text-slate-400 mb-1">Workshop / Mechanic</label>
                   <input
                     type="text"
                     required
                     value={mechanicShop}
                     onChange={(e) => setMechanicShop(e.target.value)}
                     placeholder="Workshop name"
-                    className="w-full px-3 py-2 text-xs border border-[#E8E4DC] rounded-xs bg-[#FBF9F5]"
+                    className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-mono uppercase text-slate-600 mb-1">Mechanic Notes</label>
+                <label className="block text-xs font-mono uppercase text-slate-600 dark:text-slate-400 mb-1">Mechanic Notes</label>
                 <textarea
                   rows={2}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-[#E8E4DC] rounded-xs bg-[#FBF9F5]"
+                  className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500"
                 />
               </div>
 
-              <div className="p-3 bg-[#FBF9F5] border border-[#E8E4DC] rounded-xs text-xs text-slate-600">
+              <div className="p-3 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-lg text-xs text-slate-600 dark:text-slate-400">
                 Submitting this log will update <strong>{selectedBus.regNumber}</strong>'s Next Due Date to <strong>{nextDueDate}</strong> and instantly recalculate its status badge in Firestore.
               </div>
 
-              <div className="flex justify-end space-x-2 pt-3 border-t border-[#E8E4DC]">
+              <div className="flex justify-end space-x-2 pt-3 border-t border-slate-200 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsLogModalOpen(false)}
-                  className="px-4 py-2 border border-[#E8E4DC] text-xs font-mono uppercase font-bold rounded-xs"
+                  className="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-mono uppercase font-bold rounded-lg cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-[#1A1F2C] hover:bg-[#0F131D] text-white text-xs font-mono uppercase font-bold rounded-xs flex items-center space-x-1"
+                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-amber-500 dark:hover:bg-amber-400 text-white dark:text-slate-950 text-xs font-mono uppercase font-bold rounded-lg flex items-center space-x-1 cursor-pointer shadow-xs"
                 >
                   <Check className="w-4 h-4" />
                   <span>Update Firestore Log</span>
@@ -515,11 +579,10 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
 
       {/* Add Bus to Fleet Modal */}
       {isAddBusModalOpen && (
-        <div className="fixed inset-0 z-50 bg-[#1A1F2C]/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-white border border-[#E8E4DC] max-w-lg w-full max-h-[90vh] flex flex-col rounded-xs shadow-2xl animate-in fade-in overflow-hidden my-auto">
-            
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-[#121826] border border-slate-200 dark:border-slate-800 max-w-lg w-full max-h-[90vh] flex flex-col rounded-xl shadow-2xl animate-in fade-in overflow-hidden my-auto transition-colors">
             {/* Header */}
-            <div className="bg-[#1A1F2C] text-white p-4 sm:p-5 flex items-center justify-between flex-shrink-0 border-b border-[#1A1F2C]">
+            <div className="bg-slate-900 dark:bg-[#0B0F17] text-white p-4 sm:p-5 flex items-center justify-between flex-shrink-0 border-b border-slate-800">
               <div>
                 <div className="flex items-center space-x-2 text-xs font-mono text-amber-400 uppercase tracking-widest">
                   <BusIcon className="w-3.5 h-3.5 text-amber-400" />
@@ -532,20 +595,19 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
               <button
                 type="button"
                 onClick={() => setIsAddBusModalOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-xs transition-colors cursor-pointer"
+                className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Form */}
-            <form onSubmit={handleAddNewBus} className="flex flex-col flex-1 overflow-hidden">
+            <form onSubmit={handleAddNewBus} className="flex flex-col flex-1 overflow-hidden text-slate-900 dark:text-slate-100">
               <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1 scrollbar-thin">
-                
                 {/* Registration & Model */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-mono uppercase text-slate-700 font-bold mb-1">
+                    <label className="block text-xs font-mono uppercase text-slate-700 dark:text-slate-300 font-bold mb-1">
                       Registration Number
                     </label>
                     <input
@@ -554,12 +616,12 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
                       value={newRegNumber}
                       onChange={(e) => setNewRegNumber(e.target.value)}
                       placeholder="e.g. KA 01 F 9090"
-                      className="w-full px-3 py-2 text-xs font-mono font-bold border border-[#E8E4DC] rounded-xs bg-[#FBF9F5] focus:outline-none focus:border-[#1A1F2C]"
+                      className="w-full px-3 py-2 text-xs font-mono font-bold border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-mono uppercase text-slate-700 font-bold mb-1">
+                    <label className="block text-xs font-mono uppercase text-slate-700 dark:text-slate-300 font-bold mb-1">
                       Bus Model Name
                     </label>
                     <input
@@ -568,7 +630,7 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
                       value={newModel}
                       onChange={(e) => setNewModel(e.target.value)}
                       placeholder="e.g. Ashok Leyland Viking 52s"
-                      className="w-full px-3 py-2 text-xs border border-[#E8E4DC] rounded-xs bg-[#FBF9F5] focus:outline-none focus:border-[#1A1F2C]"
+                      className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500"
                     />
                   </div>
                 </div>
@@ -576,7 +638,7 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
                 {/* Capacity & Assigned Route */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-mono uppercase text-slate-700 font-bold mb-1">
+                    <label className="block text-xs font-mono uppercase text-slate-700 dark:text-slate-300 font-bold mb-1">
                       Seating Capacity
                     </label>
                     <input
@@ -586,12 +648,12 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
                       max={80}
                       value={newCapacity}
                       onChange={(e) => setNewCapacity(Number(e.target.value))}
-                      className="w-full px-3 py-2 text-xs font-mono border border-[#E8E4DC] rounded-xs bg-[#FBF9F5] focus:outline-none focus:border-[#1A1F2C]"
+                      className="w-full px-3 py-2 text-xs font-mono border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-mono uppercase text-slate-700 font-bold mb-1">
+                    <label className="block text-xs font-mono uppercase text-slate-700 dark:text-slate-300 font-bold mb-1">
                       Assigned Route
                     </label>
                     <input
@@ -600,7 +662,7 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
                       value={newRoute}
                       onChange={(e) => setNewRoute(e.target.value)}
                       placeholder="e.g. Bengaluru → Mysuru Express"
-                      className="w-full px-3 py-2 text-xs border border-[#E8E4DC] rounded-xs bg-[#FBF9F5] focus:outline-none focus:border-[#1A1F2C]"
+                      className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500"
                     />
                   </div>
                 </div>
@@ -608,7 +670,7 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
                 {/* Driver Name & Next Service Due */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-mono uppercase text-slate-700 font-bold mb-1">
+                    <label className="block text-xs font-mono uppercase text-slate-700 dark:text-slate-300 font-bold mb-1">
                       Assigned Driver Name
                     </label>
                     <input
@@ -617,12 +679,12 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
                       value={newDriverName}
                       onChange={(e) => setNewDriverName(e.target.value)}
                       placeholder="e.g. Prakash Rao"
-                      className="w-full px-3 py-2 text-xs border border-[#E8E4DC] rounded-xs bg-[#FBF9F5] focus:outline-none focus:border-[#1A1F2C]"
+                      className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-mono uppercase text-slate-700 font-bold mb-1">
+                    <label className="block text-xs font-mono uppercase text-slate-700 dark:text-slate-300 font-bold mb-1">
                       Next Service Due Date
                     </label>
                     <input
@@ -630,20 +692,20 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
                       required
                       value={newNextServiceDue}
                       onChange={(e) => setNewNextServiceDue(e.target.value)}
-                      className="w-full px-3 py-2 text-xs font-mono border border-[#E8E4DC] rounded-xs bg-white font-bold text-amber-900 border-amber-300 focus:outline-none"
+                      className="w-full px-3 py-2 text-xs font-mono border border-amber-300 dark:border-amber-600 rounded-lg bg-amber-50 dark:bg-amber-950/30 font-bold text-amber-900 dark:text-amber-300 focus:outline-none"
                     />
                   </div>
                 </div>
 
                 {/* Driver Incentives & Performance */}
-                <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xs space-y-3">
-                  <div className="text-xs font-mono font-bold uppercase text-amber-950 flex items-center space-x-1">
-                    <span>Initial Driver Incentive Metrics (Gemini AI)</span>
+                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg space-y-3">
+                  <div className="text-xs font-mono font-bold uppercase text-amber-800 dark:text-amber-300 flex items-center space-x-1">
+                    <span>Initial Driver Incentive Telemetry</span>
                   </div>
 
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <label className="block text-[10px] font-mono uppercase text-amber-900 font-bold mb-1">
+                      <label className="block text-[10px] font-mono uppercase text-amber-800 dark:text-amber-300 font-bold mb-1">
                         On-Time %
                       </label>
                       <input
@@ -652,12 +714,12 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
                         max={100}
                         value={newOnTime}
                         onChange={(e) => setNewOnTime(Number(e.target.value))}
-                        className="w-full px-2 py-1.5 text-xs font-mono font-bold border border-amber-300 rounded-xs bg-white text-emerald-900"
+                        className="w-full px-2 py-1.5 text-xs font-mono font-bold border border-amber-300 dark:border-amber-700 rounded-md bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-400"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-mono uppercase text-amber-900 font-bold mb-1">
+                      <label className="block text-[10px] font-mono uppercase text-amber-800 dark:text-amber-300 font-bold mb-1">
                         Fuel Score
                       </label>
                       <input
@@ -666,12 +728,12 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
                         max={100}
                         value={newFuelScore}
                         onChange={(e) => setNewFuelScore(Number(e.target.value))}
-                        className="w-full px-2 py-1.5 text-xs font-mono font-bold border border-amber-300 rounded-xs bg-white text-teal-900"
+                        className="w-full px-2 py-1.5 text-xs font-mono font-bold border border-amber-300 dark:border-amber-700 rounded-md bg-white dark:bg-slate-900 text-teal-700 dark:text-teal-400"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-mono uppercase text-amber-900 font-bold mb-1">
+                      <label className="block text-[10px] font-mono uppercase text-amber-800 dark:text-amber-300 font-bold mb-1">
                         Perk Credit (₹)
                       </label>
                       <input
@@ -679,37 +741,43 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
                         min={0}
                         value={newIncentiveCredit}
                         onChange={(e) => setNewIncentiveCredit(Number(e.target.value))}
-                        className="w-full px-2 py-1.5 text-xs font-mono font-bold border border-amber-300 rounded-xs bg-white text-amber-900"
+                        className="w-full px-2 py-1.5 text-xs font-mono font-bold border border-amber-300 dark:border-amber-700 rounded-md bg-white dark:bg-slate-900 text-amber-700 dark:text-amber-300"
                       />
                     </div>
                   </div>
                 </div>
-
               </div>
 
-              {/* Pinned Action Buttons */}
-              <div className="p-4 sm:px-6 bg-[#FBF9F5] border-t border-[#E8E4DC] flex items-center justify-end space-x-3 flex-shrink-0">
+              {/* Action Buttons */}
+              <div className="p-4 sm:px-6 bg-slate-50 dark:bg-slate-900/80 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end space-x-3 flex-shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsAddBusModalOpen(false)}
-                  className="px-4 py-2 text-xs font-mono uppercase text-slate-600 hover:text-slate-900 border border-transparent hover:border-[#E8E4DC] rounded-xs cursor-pointer"
+                  className="px-4 py-2 text-xs font-mono uppercase text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 rounded-lg cursor-pointer"
                 >
                   Cancel
                 </button>
 
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-[#1A1F2C] hover:bg-[#0F131D] text-white text-xs font-mono uppercase font-bold tracking-wider rounded-xs transition-colors flex items-center space-x-2 cursor-pointer shadow-sm"
+                  className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-amber-500 dark:hover:bg-amber-400 text-white dark:text-slate-950 text-xs font-mono uppercase font-bold tracking-wider rounded-lg transition-colors flex items-center space-x-2 cursor-pointer shadow-xs"
                 >
-                  <Plus className="w-4 h-4 text-amber-400" />
+                  <Plus className="w-4 h-4 text-amber-400 dark:text-slate-950" />
                   <span>Enroll Bus & Sync Fleet</span>
                 </button>
               </div>
-
             </form>
           </div>
         </div>
       )}
+
+      {/* Maintenance Report Export Modal */}
+      <ReportsModal
+        owner={owner}
+        isOpen={isReportsModalOpen}
+        onClose={() => setIsReportsModalOpen(false)}
+        defaultReportType="maintenance"
+      />
     </div>
   );
 };

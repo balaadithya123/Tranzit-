@@ -18,46 +18,50 @@ export const StatCard: React.FC<StatCardProps> = ({
   badgeText,
   accentColor = 'amber'
 }) => {
-  const accentBorder = 
-    accentColor === 'amber' ? 'border-t-2 border-t-amber-600' :
-    accentColor === 'teal' ? 'border-t-2 border-t-teal-600' :
-    accentColor === 'navy' ? 'border-t-2 border-t-[#1A1F2C]' :
-    'border-t-2 border-t-slate-400';
-
   const badgeClass =
-    accentColor === 'amber' ? 'bg-amber-100 text-amber-900 border-amber-300' :
-    accentColor === 'teal' ? 'bg-teal-100 text-teal-900 border-teal-300' :
-    accentColor === 'navy' ? 'bg-slate-100 text-slate-900 border-slate-300' :
-    'bg-slate-100 text-slate-700 border-slate-300';
+    accentColor === 'amber'
+      ? 'bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/20 dark:border-amber-500/30'
+      : accentColor === 'teal'
+      ? 'bg-teal-500/10 text-teal-800 dark:text-teal-300 border-teal-500/20 dark:border-teal-500/30'
+      : accentColor === 'navy'
+      ? 'bg-neutral-500/10 text-neutral-800 dark:text-neutral-200 border-neutral-500/20'
+      : 'bg-neutral-500/10 text-neutral-700 dark:text-neutral-300 border-neutral-500/20';
+
+  const iconAccent =
+    accentColor === 'amber'
+      ? 'text-amber-600 dark:text-amber-400 bg-amber-500/10 dark:bg-amber-500/15 border-amber-500/20'
+      : accentColor === 'teal'
+      ? 'text-teal-600 dark:text-teal-400 bg-teal-500/10 dark:bg-teal-500/15 border-teal-500/20'
+      : 'text-neutral-600 dark:text-neutral-400 bg-slate-100 dark:bg-neutral-800 border-slate-200 dark:border-neutral-700';
 
   return (
-    <div className={`bg-white border border-[#E8E4DC] ${accentBorder} p-5 rounded-xs flex flex-col justify-between`}>
-      <div className="flex items-start justify-between">
-        <div>
-          <span className="text-xs font-mono uppercase tracking-wider text-slate-500 font-semibold block">
+    <div className="bg-white dark:bg-[#121214] border border-slate-200/90 dark:border-neutral-800 p-5 rounded-xl flex flex-col justify-between shadow-2xs hover:shadow-xs transition-shadow">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <span className="text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-neutral-400 font-semibold block truncate">
             {label}
           </span>
-          <div className="text-2xl sm:text-3xl font-mono font-bold text-[#1A1F2C] mt-2 tracking-tight">
+          <div className="text-2xl sm:text-3xl font-mono font-bold text-slate-900 dark:text-neutral-100 mt-2 tracking-tight">
             {value}
           </div>
         </div>
 
         {Icon && (
-          <div className="p-2 bg-[#FBF9F5] border border-[#E8E4DC] text-slate-700 rounded-xs">
+          <div className={`p-2.5 rounded-lg border shrink-0 ${iconAccent}`}>
             <Icon className="w-5 h-5" />
           </div>
         )}
       </div>
 
-      <div className="mt-4 pt-3 border-t border-[#E8E4DC]/60 flex items-center justify-between text-xs">
+      <div className="mt-4 pt-3 border-t border-slate-100 dark:border-neutral-800/80 flex items-center justify-between text-xs gap-2">
         {subtext ? (
-          <span className="text-slate-500 font-sans">{subtext}</span>
+          <span className="text-slate-500 dark:text-neutral-400 font-sans truncate">{subtext}</span>
         ) : (
           <span />
         )}
 
         {badgeText && (
-          <span className={`px-2 py-0.5 text-[10px] font-mono font-semibold rounded-xs border uppercase ${badgeClass}`}>
+          <span className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded-md border uppercase shrink-0 ${badgeClass}`}>
             {badgeText}
           </span>
         )}

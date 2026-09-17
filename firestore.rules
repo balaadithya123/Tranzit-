@@ -20,5 +20,8 @@ service cloud.firestore {
     match /maintenance/{maintId} {
       allow read, write: if true;
     }
+    match /drivers/{driverId} {
+      allow read, write: if true;
+    }
   }
 }

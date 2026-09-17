@@ -36,6 +36,7 @@ export interface Bus {
   fuelEfficiencyScore?: number; // e.g. 88 (88/100)
   fuelIncentiveCredit?: number; // e.g. 2000 (₹2,000 credit)
   aiIncentiveRationale?: string; // cached or live generated rationale
+  aiRationale?: string; // cached or live generated rationale
   leaseValue?: number; // monthly payout e.g. 85000 (if Lease)
   renewalDate?: string; // YYYY-MM-DD (if Lease)
 }
@@ -86,3 +87,34 @@ export interface MaintenanceRecord {
   notes: string;
   mechanicShop?: string;
 }
+
+export type DriverStatus = 'Active' | 'On Leave' | 'Off Duty' | 'Relief';
+
+export type LicenseStatus = 'Valid' | 'Expiring Soon' | 'Expired';
+
+export interface Driver {
+  id: string;
+  ownerId: string;
+  employeeId: string; // e.g. "DRV-101"
+  name: string;
+  phone: string;
+  emergencyContact?: string;
+  bloodGroup?: string; // e.g. "O+", "B+", "A+"
+  status: DriverStatus; // Active | On Leave | Off Duty | Relief
+  licenseNumber: string; // e.g. "KA01 20180004921"
+  licenseType: string; // e.g. "Heavy Transport Vehicle (HMV/HTV)" or "Commercial Passenger PSV"
+  badgeNumber?: string; // e.g. "KA-PSV-8492"
+  licenseExpiryDate: string; // YYYY-MM-DD
+  assignedBusId?: string;
+  assignedBusReg?: string; // e.g. "KA 01 F 4291"
+  assignedRouteId?: string;
+  assignedRouteName?: string; // e.g. "Bengaluru → Mysuru Express"
+  shiftTiming?: string; // e.g. "Morning Shift (06:00 - 14:00)"
+  experienceYears?: number;
+  joiningDate?: string; // YYYY-MM-DD
+  safetyScore?: number; // 0 - 100
+  tripsCompleted?: number;
+  notes?: string;
+  createdAt?: string;
+}
+
