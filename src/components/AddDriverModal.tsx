@@ -359,11 +359,20 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 focus:border-amber-500 dark:focus:border-amber-400 text-sm text-slate-800 dark:text-neutral-100 rounded-lg outline-none"
                 >
                   <option value="">-- Standby across all routes --</option>
-                  {routes.map(r => (
-                    <option key={r.id} value={r.id}>
-                      {r.routeName} ({r.distanceKm} km)
-                    </option>
-                  ))}
+                  {routes.map(r => {
+                    const permitTag = r.permitType === 'stage_carriage' 
+                      ? '[STA Mandated]' 
+                      : r.permitType === 'contract_carriage'
+                      ? '[Contract]'
+                      : r.permitType === 'tourist_permit'
+                      ? '[Tourist]'
+                      : '[Unverified]';
+                    return (
+                      <option key={r.id} value={r.id}>
+                        {r.routeName} ({r.distanceKm} km) {permitTag}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 

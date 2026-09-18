@@ -4,13 +4,13 @@ import { X, Command } from 'lucide-react';
 interface KeyboardShortcutsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  isSaaS: boolean;
+  isSaaS?: boolean;
 }
 
 export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
   isOpen,
   onClose,
-  isSaaS
+  isSaaS = true
 }) => {
   useEffect(() => {
     if (!isOpen) return;

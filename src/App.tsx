@@ -325,37 +325,52 @@ function MainApp() {
       </div>
 
       {/* Global Modals */}
-      <EditProfileModal
-        owner={currentOwner}
-        isOpen={isEditProfileOpen}
-        onClose={() => setIsEditProfileOpen(false)}
-      />
+      {isEditProfileOpen && (
+        <EditProfileModal
+          owner={currentOwner}
+          isOpen={isEditProfileOpen}
+          onClose={() => setIsEditProfileOpen(false)}
+        />
+      )}
 
-      <ReportsModal
-        owner={currentOwner}
-        isOpen={isReportsModalOpen}
-        onClose={() => setIsReportsModalOpen(false)}
-      />
+      {isReportsModalOpen && (
+        <ReportsModal
+          owner={currentOwner}
+          isOpen={isReportsModalOpen}
+          onClose={() => setIsReportsModalOpen(false)}
+        />
+      )}
 
       {/* Command Palette / Spotlight Search */}
-      <CommandPalette
-        isOpen={isCommandPaletteOpen}
-        onClose={() => setIsCommandPaletteOpen(false)}
-        owner={currentOwner}
-        buses={buses}
-        drivers={drivers}
-        routes={routes}
-        onNavigateTab={setActiveTab}
-        onSwitchOwner={handleSwitchOwner}
-        onOpenReportsModal={() => setIsReportsModalOpen(true)}
-        onOpenProfileModal={() => setIsEditProfileOpen(true)}
-      />
+      {isCommandPaletteOpen && (
+        <CommandPalette
+          isOpen={isCommandPaletteOpen}
+          onClose={() => setIsCommandPaletteOpen(false)}
+          owner={currentOwner}
+          buses={buses}
+          drivers={drivers}
+          routes={routes}
+          onNavigateTab={setActiveTab}
+          onSwitchOwner={handleSwitchOwner}
+          onOpenReportsModal={() => {
+            setIsCommandPaletteOpen(false);
+            setIsReportsModalOpen(true);
+          }}
+          onOpenProfileModal={() => {
+            setIsCommandPaletteOpen(false);
+            setIsEditProfileOpen(true);
+          }}
+        />
+      )}
 
       {/* Keyboard Shortcuts Cheat Sheet */}
-      <KeyboardShortcutsModal
-        isOpen={isShortcutsOpen}
-        onClose={() => setIsShortcutsOpen(false)}
-      />
+      {isShortcutsOpen && (
+        <KeyboardShortcutsModal
+          isOpen={isShortcutsOpen}
+          onClose={() => setIsShortcutsOpen(false)}
+          isSaaS={currentOwner.planType === 'SaaS'}
+        />
+      )}
     </div>
   );
 }

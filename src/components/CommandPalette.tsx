@@ -37,7 +37,7 @@ interface CommandItem {
   id: string;
   title: string;
   subtitle?: string;
-  category: 'Navigation' | 'Fleet Buses' | 'Pilots' | 'Actions';
+  category: 'Navigation' | 'Fleet Buses' | 'Pilots' | 'Routes' | 'Actions';
   icon: React.ComponentType<{ className?: string }>;
   action: () => void;
   badge?: string;
@@ -49,6 +49,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   owner,
   buses,
   drivers,
+  routes = [],
   onNavigateTab,
   onSwitchOwner,
   onOpenReportsModal,
@@ -203,8 +204,29 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       });
     });
 
+    // Dynamic Route entries
+    routes.forEach(route => {
+      const permitTag = route.permitType === 'stage_carriage'
+        ? 'Stage Carriage (STA Mandated)'
+        : route.permitType === 'contract_carriage'
+        ? 'Contract Carriage'
+        : route.permitType === 'tourist_permit'
+        ? 'Tourist Permit'
+        : 'Unverified Permit';
+
+      list.push({
+        id: `route-${route.id}`,
+        title: route.routeName,
+        subtitle: `${route.origin} → ${route.destination} (${route.distanceKm} km) • ${permitTag}`,
+        category: 'Routes',
+        icon: Ticket,
+        action: () => { onNavigateTab('fares'); onClose(); },
+        badge: route.permitType === 'stage_carriage' ? 'STA' : route.permitType === 'unverified' ? '⚠️ Unverified' : `${route.distanceKm}km`
+      });
+    });
+
     return list;
-  }, [owner, buses, drivers, isSaaS, resolvedTheme, onNavigateTab, onSwitchOwner, onOpenReportsModal, onOpenProfileModal, toggleTheme, onClose]);
+  }, [owner, buses, drivers, routes, isSaaS, resolvedTheme, onNavigateTab, onSwitchOwner, onOpenReportsModal, onOpenProfileModal, toggleTheme, onClose]);
 
   // Filter commands by queryText
   const filteredCommands = useMemo(() => {

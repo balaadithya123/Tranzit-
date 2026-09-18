@@ -706,36 +706,44 @@ export const DriversView: React.FC<DriversViewProps> = ({ owner }) => {
       </div>
 
       {/* Modals */}
-      <AddDriverModal
-        owner={owner}
-        buses={buses}
-        routes={routes}
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-      />
+      {isAddModalOpen && (
+        <AddDriverModal
+          owner={owner}
+          buses={buses}
+          routes={routes}
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+        />
+      )}
 
-      <EditDriverModal
-        owner={owner}
-        driver={selectedDriverForEdit}
-        buses={buses}
-        routes={routes}
-        isOpen={!!selectedDriverForEdit}
-        onClose={() => setSelectedDriverForEdit(null)}
-      />
+      {selectedDriverForEdit && (
+        <EditDriverModal
+          owner={owner}
+          driver={selectedDriverForEdit}
+          buses={buses}
+          routes={routes}
+          isOpen={!!selectedDriverForEdit}
+          onClose={() => setSelectedDriverForEdit(null)}
+        />
+      )}
 
-      <RenewLicenseModal
-        driver={selectedDriverForRenew}
-        isOpen={!!selectedDriverForRenew}
-        onClose={() => setSelectedDriverForRenew(null)}
-      />
+      {selectedDriverForRenew && (
+        <RenewLicenseModal
+          driver={selectedDriverForRenew}
+          isOpen={!!selectedDriverForRenew}
+          onClose={() => setSelectedDriverForRenew(null)}
+        />
+      )}
 
-      <AssignRouteModal
-        driver={selectedDriverForAssign}
-        buses={buses}
-        routes={routes}
-        isOpen={!!selectedDriverForAssign}
-        onClose={() => setSelectedDriverForAssign(null)}
-      />
+      {selectedDriverForAssign && (
+        <AssignRouteModal
+          driver={selectedDriverForAssign}
+          buses={buses}
+          routes={routes}
+          isOpen={!!selectedDriverForAssign}
+          onClose={() => setSelectedDriverForAssign(null)}
+        />
+      )}
     </div>
   );
 };

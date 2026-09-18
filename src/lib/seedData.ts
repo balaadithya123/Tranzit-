@@ -22,8 +22,9 @@ export async function seedInitialFirestoreData(force = false) {
     const saasSnap = await getDoc(saasRef);
     const bus1Snap = await getDoc(doc(db, 'buses', 'bus-saas-1'));
     const histSnap = await getDoc(doc(db, 'earnings', 'e-hist-28'));
+    const route1Snap = await getDoc(doc(db, 'routes', 'route-saas-1'));
 
-    if (!saasSnap.exists() || !bus1Snap.exists() || !histSnap.exists() || bus1Snap.data()?.onTimePercent === undefined || force) {
+    if (!saasSnap.exists() || !bus1Snap.exists() || !histSnap.exists() || !route1Snap.exists() || route1Snap.data()?.permitType === undefined || bus1Snap.data()?.onTimePercent === undefined || force) {
       console.log("Seeding or backfilling initial Firestore data for Tranzit...");
 
       const batch = writeBatch(db);
@@ -115,7 +116,9 @@ export async function seedInitialFirestoreData(force = false) {
           fixedCharge: 50,
           ratePerKm: 2.5,
           computedFare: calculateFare(50, 145, 2.5),
-          tripsPerDay: 4
+          tripsPerDay: 4,
+          permitType: "stage_carriage",
+          permitNumber: "KA/STA/SC/2023/8841"
         },
         {
           id: "route-saas-2",
@@ -127,7 +130,9 @@ export async function seedInitialFirestoreData(force = false) {
           fixedCharge: 25,
           ratePerKm: 2.2,
           computedFare: calculateFare(25, 38, 2.2),
-          tripsPerDay: 8
+          tripsPerDay: 8,
+          permitType: "contract_carriage",
+          permitNumber: "KA/CC/BLR/2022/1902"
         },
         {
           id: "route-saas-3",
@@ -139,7 +144,9 @@ export async function seedInitialFirestoreData(force = false) {
           fixedCharge: 40,
           ratePerKm: 2.4,
           computedFare: calculateFare(40, 118, 2.4),
-          tripsPerDay: 3
+          tripsPerDay: 3,
+          permitType: "tourist_permit",
+          permitNumber: "AITP/KA/2024/7123"
         }
       ];
 

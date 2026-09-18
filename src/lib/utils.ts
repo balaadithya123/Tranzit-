@@ -1,4 +1,4 @@
-import { ServiceStatus, LicenseStatus } from '../types';
+import { ServiceStatus, LicenseStatus, PermitType } from '../types';
 
 /**
  * Format Indian Rupee currency: e.g. 255000 -> "₹2,55,000"
@@ -206,4 +206,68 @@ export function downloadCSV(
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+}
+
+/**
+  * Route Permit Classification and Fare Regulation Helper
+  */
+export interface PermitTypeConfig {
+  type: PermitType;
+  label: string;
+  shortLabel: string;
+  isFareEditable: boolean;
+  isUnverified: boolean;
+  regulatoryNotice: string;
+  badgeClass: string;
+  badgeDotClass: string;
+}
+
+export function getPermitTypeConfig(permitType?: PermitType): PermitTypeConfig {
+  switch (permitType) {
+    case 'stage_carriage':
+      return {
+        type: 'stage_carriage',
+        label: 'Stage Carriage Permit',
+        shortLabel: 'Stage Carriage (STA)',
+        isFareEditable: false,
+        isUnverified: false,
+        regulatoryNotice: 'Set by State Transport Authority — not editable',
+        badgeClass: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20',
+        badgeDotClass: 'bg-blue-500'
+      };
+    case 'contract_carriage':
+      return {
+        type: 'contract_carriage',
+        label: 'Contract Carriage Permit',
+        shortLabel: 'Contract Carriage',
+        isFareEditable: true,
+        isUnverified: false,
+        regulatoryNotice: 'Operator-managed dynamic distance & fixed fare pricing',
+        badgeClass: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20',
+        badgeDotClass: 'bg-emerald-500'
+      };
+    case 'tourist_permit':
+      return {
+        type: 'tourist_permit',
+        label: 'Tourist Permit (All-India / State)',
+        shortLabel: 'Tourist Permit',
+        isFareEditable: true,
+        isUnverified: false,
+        regulatoryNotice: 'Operator-managed commercial & package pricing',
+        badgeClass: 'bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20',
+        badgeDotClass: 'bg-purple-500'
+      };
+    case 'unverified':
+    default:
+      return {
+        type: 'unverified',
+        label: 'Unverified Permit Status',
+        shortLabel: 'Unverified Permit',
+        isFareEditable: false,
+        isUnverified: true,
+        regulatoryNotice: 'Regulatory permit classification unconfirmed — fare editing locked',
+        badgeClass: 'bg-amber-500/10 text-amber-800 dark:text-amber-400 border-amber-500/30',
+        badgeDotClass: 'bg-amber-500'
+      };
+  }
 }

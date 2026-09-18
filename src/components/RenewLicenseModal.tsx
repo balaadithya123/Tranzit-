@@ -16,8 +16,6 @@ export const RenewLicenseModal: React.FC<RenewLicenseModalProps> = ({
   isOpen,
   onClose
 }) => {
-  if (!isOpen || !driver) return null;
-
   // Default new expiry date to 3 years from today (standard commercial license renewal in India)
   const defaultRenewalDate = () => {
     const d = new Date();
@@ -26,10 +24,23 @@ export const RenewLicenseModal: React.FC<RenewLicenseModalProps> = ({
   };
 
   const [newExpiryDate, setNewExpiryDate] = useState(defaultRenewalDate());
-  const [updatedBadgeNumber, setUpdatedBadgeNumber] = useState(driver.badgeNumber || '');
+  const [updatedBadgeNumber, setUpdatedBadgeNumber] = useState(driver?.badgeNumber || '');
   const [renewalNotes, setRenewalNotes] = useState(`Commercial DL renewed on ${new Date().toLocaleDateString('en-IN')}`);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Sync state whenever driver or isOpen changes
+  React.useEffect(() => {
+    if (driver && isOpen) {
+      setNewExpiryDate(defaultRenewalDate());
+      setUpdatedBadgeNumber(driver.badgeNumber || '');
+      setRenewalNotes(`Commercial DL renewed on ${new Date().toLocaleDateString('en-IN')}`);
+      setError(null);
+      setSubmitting(false);
+    }
+  }, [driver, isOpen]);
+
+  if (!isOpen || !driver) return null;
 
   const currentValidity = getLicenseValidityInfo(driver.licenseExpiryDate);
 

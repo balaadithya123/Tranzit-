@@ -52,7 +52,12 @@
         "fixedCharge": { "type": "number" },
         "ratePerKm": { "type": "number" },
         "computedFare": { "type": "number" },
-        "tripsPerDay": { "type": "number" }
+        "tripsPerDay": { "type": "number" },
+        "permitType": {
+          "type": "string",
+          "enum": ["stage_carriage", "contract_carriage", "tourist_permit", "unverified"]
+        },
+        "permitNumber": { "type": "string" }
       }
     },
     "EarningsEntry": {

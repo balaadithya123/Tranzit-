@@ -21,28 +21,26 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({
   isOpen,
   onClose
 }) => {
-  if (!isOpen || !driver) return null;
-
-  const [name, setName] = useState(driver.name);
-  const [employeeId, setEmployeeId] = useState(driver.employeeId);
-  const [phone, setPhone] = useState(driver.phone);
-  const [emergencyContact, setEmergencyContact] = useState(driver.emergencyContact || '');
-  const [bloodGroup, setBloodGroup] = useState(driver.bloodGroup || 'O+');
-  const [status, setStatus] = useState<DriverStatus>(driver.status);
+  const [name, setName] = useState(driver?.name || '');
+  const [employeeId, setEmployeeId] = useState(driver?.employeeId || '');
+  const [phone, setPhone] = useState(driver?.phone || '');
+  const [emergencyContact, setEmergencyContact] = useState(driver?.emergencyContact || '');
+  const [bloodGroup, setBloodGroup] = useState(driver?.bloodGroup || 'O+');
+  const [status, setStatus] = useState<DriverStatus>(driver?.status || 'Active');
   
   // License fields
-  const [licenseNumber, setLicenseNumber] = useState(driver.licenseNumber);
-  const [licenseType, setLicenseType] = useState(driver.licenseType);
-  const [badgeNumber, setBadgeNumber] = useState(driver.badgeNumber || '');
-  const [licenseExpiryDate, setLicenseExpiryDate] = useState(driver.licenseExpiryDate);
+  const [licenseNumber, setLicenseNumber] = useState(driver?.licenseNumber || '');
+  const [licenseType, setLicenseType] = useState(driver?.licenseType || 'Heavy Commercial Transport (HMV/HTV)');
+  const [badgeNumber, setBadgeNumber] = useState(driver?.badgeNumber || '');
+  const [licenseExpiryDate, setLicenseExpiryDate] = useState(driver?.licenseExpiryDate || '');
   
   // Assignment fields
-  const [assignedBusId, setAssignedBusId] = useState(driver.assignedBusId || '');
-  const [assignedRouteId, setAssignedRouteId] = useState(driver.assignedRouteId || '');
-  const [shiftTiming, setShiftTiming] = useState(driver.shiftTiming || 'Morning Shift (06:00 - 14:30)');
-  const [experienceYears, setExperienceYears] = useState(driver.experienceYears || 5);
-  const [safetyScore, setSafetyScore] = useState(driver.safetyScore ?? 95);
-  const [notes, setNotes] = useState(driver.notes || '');
+  const [assignedBusId, setAssignedBusId] = useState(driver?.assignedBusId || '');
+  const [assignedRouteId, setAssignedRouteId] = useState(driver?.assignedRouteId || '');
+  const [shiftTiming, setShiftTiming] = useState(driver?.shiftTiming || 'Morning Shift (06:00 - 14:30)');
+  const [experienceYears, setExperienceYears] = useState(driver?.experienceYears || 5);
+  const [safetyScore, setSafetyScore] = useState(driver?.safetyScore ?? 95);
+  const [notes, setNotes] = useState(driver?.notes || '');
 
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -50,7 +48,7 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({
 
   // Sync state if driver changes
   useEffect(() => {
-    if (driver) {
+    if (driver && isOpen) {
       setName(driver.name);
       setEmployeeId(driver.employeeId);
       setPhone(driver.phone);
@@ -67,8 +65,11 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({
       setExperienceYears(driver.experienceYears || 5);
       setSafetyScore(driver.safetyScore ?? 95);
       setNotes(driver.notes || '');
+      setError(null);
     }
-  }, [driver]);
+  }, [driver, isOpen]);
+
+  if (!isOpen || !driver) return null;
 
   const validityInfo = getLicenseValidityInfo(licenseExpiryDate);
 
@@ -404,11 +405,20 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 focus:border-amber-500 dark:focus:border-amber-400 text-sm text-slate-800 dark:text-neutral-100 rounded-lg outline-none"
                 >
                   <option value="">-- Standby across all routes --</option>
-                  {routes.map(r => (
-                    <option key={r.id} value={r.id}>
-                      {r.routeName} ({r.distanceKm} km)
-                    </option>
-                  ))}
+                  {routes.map(r => {
+                    const permitTag = r.permitType === 'stage_carriage' 
+                      ? '[STA Mandated]' 
+                      : r.permitType === 'contract_carriage'
+                      ? '[Contract]'
+                      : r.permitType === 'tourist_permit'
+                      ? '[Tourist]'
+                      : '[Unverified]';
+                    return (
+                      <option key={r.id} value={r.id}>
+                        {r.routeName} ({r.distanceKm} km) {permitTag}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 

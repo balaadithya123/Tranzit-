@@ -19,13 +19,23 @@ export const AssignRouteModal: React.FC<AssignRouteModalProps> = ({
   isOpen,
   onClose
 }) => {
-  if (!isOpen || !driver) return null;
-
-  const [assignedBusId, setAssignedBusId] = useState(driver.assignedBusId || '');
-  const [assignedRouteId, setAssignedRouteId] = useState(driver.assignedRouteId || '');
-  const [shiftTiming, setShiftTiming] = useState(driver.shiftTiming || 'Morning Shift (06:00 - 14:30)');
+  const [assignedBusId, setAssignedBusId] = useState(driver?.assignedBusId || '');
+  const [assignedRouteId, setAssignedRouteId] = useState(driver?.assignedRouteId || '');
+  const [shiftTiming, setShiftTiming] = useState(driver?.shiftTiming || 'Morning Shift (06:00 - 14:30)');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (driver && isOpen) {
+      setAssignedBusId(driver.assignedBusId || '');
+      setAssignedRouteId(driver.assignedRouteId || '');
+      setShiftTiming(driver.shiftTiming || 'Morning Shift (06:00 - 14:30)');
+      setError(null);
+      setSubmitting(false);
+    }
+  }, [driver, isOpen]);
+
+  if (!isOpen || !driver) return null;
 
   const handleAssign = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,11 +138,20 @@ export const AssignRouteModal: React.FC<AssignRouteModalProps> = ({
               className="w-full px-3 py-2 bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 focus:border-amber-500 dark:focus:border-amber-400 text-sm text-slate-800 dark:text-neutral-100 rounded-lg outline-none"
             >
               <option value="">-- Standby across all routes --</option>
-              {routes.map(r => (
-                <option key={r.id} value={r.id}>
-                  {r.routeName} ({r.distanceKm} km)
-                </option>
-              ))}
+              {routes.map(r => {
+                const permitTag = r.permitType === 'stage_carriage' 
+                  ? '[STA Mandated]' 
+                  : r.permitType === 'contract_carriage'
+                  ? '[Contract]'
+                  : r.permitType === 'tourist_permit'
+                  ? '[Tourist]'
+                  : '[Unverified]';
+                return (
+                  <option key={r.id} value={r.id}>
+                    {r.routeName} ({r.distanceKm} km) {permitTag}
+                  </option>
+                );
+              })}
             </select>
           </div>
 

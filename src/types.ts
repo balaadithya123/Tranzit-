@@ -41,6 +41,8 @@ export interface Bus {
   renewalDate?: string; // YYYY-MM-DD (if Lease)
 }
 
+export type PermitType = 'stage_carriage' | 'contract_carriage' | 'tourist_permit' | 'unverified';
+
 export interface RouteItem {
   id: string;
   ownerId: string;
@@ -52,6 +54,8 @@ export interface RouteItem {
   ratePerKm: number; // ₹ / km
   computedFare: number; // recalculated live: (distanceKm * ratePerKm) + fixedCharge
   tripsPerDay: number;
+  permitType?: PermitType; // 'stage_carriage' | 'contract_carriage' | 'tourist_permit' | 'unverified'
+  permitNumber?: string; // Optional RTO permit reference number
 }
 
 export interface EarningsEntry {
