@@ -16,23 +16,29 @@ import {
   Sliders, 
   HelpCircle,
   Bus,
-  Users
+  Users,
+  LogOut
 } from 'lucide-react';
 import { OwnerProfile, PlanType } from '../types';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { isDemoAccount, cascadeDeleteOwnerAccount } from '../lib/accountService';
+import { saveLocalOwner } from '../lib/firebaseAuthHelper';
 
 interface SettingsViewProps {
   owner: OwnerProfile;
   onAccountDeleted: () => void;
   onOpenReportsModal: () => void;
+  onNavigateTab?: (tab: string) => void;
+  onLogout?: () => void;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
   owner,
   onAccountDeleted,
-  onOpenReportsModal
+  onOpenReportsModal,
+  onNavigateTab,
+  onLogout
 }) => {
   // Form state
   const [name, setName] = useState(owner.name || '');
@@ -40,7 +46,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [phone, setPhone] = useState(owner.phone || '+91 98000 00000');
   const [city, setCity] = useState(owner.city || 'Bengaluru');
   const [planType, setPlanType] = useState<PlanType>(owner.planType || 'SaaS');
-  const [saasFeePerBus, setSaasFeePerBus] = useState(owner.saasFeePerBus || 4500);
   const [activeBusesCount, setActiveBusesCount] = useState(owner.activeBusesCount || 0);
   const [avgDailyRiders, setAvgDailyRiders] = useState(owner.avgDailyRiders || 0);
 
@@ -72,12 +77,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         phone: phone.trim(),
         city: city.trim(),
         planType,
-        saasFeePerBus: Number(saasFeePerBus),
         activeBusesCount: Number(activeBusesCount),
         avgDailyRiders: Number(avgDailyRiders)
       };
 
       await setDoc(doc(db, 'owners', owner.id), updatedData, { merge: true });
+      saveLocalOwner({ ...owner, ...updatedData });
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err: any) {
@@ -256,27 +261,46 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 onChange={(e) => setPlanType(e.target.value as PlanType)}
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 rounded-lg text-xs font-mono text-slate-900 dark:text-neutral-100 focus:outline-hidden focus:border-amber-500 cursor-pointer"
               >
-                <option value="SaaS">SaaS (Direct Fares + ₹4,500/bus)</option>
+                <option value="SaaS">SaaS (Direct Fares + Platform Tier)</option>
                 <option value="Lease">Lease (Fixed Monthly Yield)</option>
               </select>
             </div>
 
             {planType === 'SaaS' && (
-              <div>
-                <label className="block text-xs font-mono font-semibold text-slate-700 dark:text-neutral-300 mb-1.5">
-                  SaaS Fee per Bus (₹/Month)
-                </label>
-                <div className="relative">
-                  <CreditCard className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                  <input
-                    type="number"
-                    value={saasFeePerBus}
-                    onChange={(e) => setSaasFeePerBus(Number(e.target.value))}
-                    min={0}
-                    step={100}
-                    className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 rounded-lg text-xs font-mono text-slate-900 dark:text-neutral-100 focus:outline-hidden focus:border-amber-500"
-                  />
+              <div className="p-3.5 bg-amber-500/10 border border-amber-500/25 rounded-xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <CreditCard className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    <span className="text-xs font-mono font-bold text-amber-900 dark:text-amber-200 uppercase">
+                      Current Subscription Plan
+                    </span>
+                  </div>
+                  <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-amber-200/70 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700/60">
+                    {owner.subscriptionPlanName || (activeBusesCount <= 5 ? 'Starter' : activeBusesCount <= 20 ? 'Growth' : 'Enterprise')} Tier
+                  </span>
                 </div>
+
+                <div className="mt-2 text-xs font-mono text-slate-700 dark:text-neutral-300 flex items-center justify-between">
+                  <span>Per-Bus Platform Rate:</span>
+                  <span className="font-bold text-slate-900 dark:text-neutral-100">
+                    ₹{(owner.saasFeePerBus || (activeBusesCount <= 5 ? 649 : activeBusesCount <= 20 ? 899 : 1599)).toLocaleString('en-IN')} / bus / mo
+                  </span>
+                </div>
+
+                <p className="text-[11px] text-slate-500 dark:text-neutral-400 mt-2 font-sans">
+                  SaaS fees are determined strictly by platform administration and cannot be edited directly by owners.
+                </p>
+
+                {onNavigateTab && (
+                  <button
+                    type="button"
+                    onClick={() => onNavigateTab('subscription')}
+                    className="mt-3 w-full py-1.5 px-3 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-mono font-bold rounded-lg transition-colors flex items-center justify-center space-x-1.5 cursor-pointer shadow-xs"
+                  >
+                    <span>View All Plan Tiers & Upgrade</span>
+                    <span>→</span>
+                  </button>
+                )}
               </div>
             )}
 
@@ -351,7 +375,44 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
       </form>
 
-      {/* Section 3: DANGER ZONE - Account Deletion (Real Accounts Only) */}
+      {/* Section 3: Active Session & Logout */}
+      <div className="bg-white dark:bg-[#121214] border border-slate-200 dark:border-neutral-800 rounded-xl p-5 sm:p-6 shadow-2xs space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-neutral-800/80 pb-3">
+          <div className="flex items-center space-x-2.5">
+            <LogOut className="w-4 h-4 text-slate-600 dark:text-neutral-400" />
+            <h2 className="text-sm font-bold uppercase font-mono tracking-wider text-slate-800 dark:text-neutral-200">
+              Account Session & Sign Out
+            </h2>
+          </div>
+          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+            Active Session
+          </span>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <p className="text-xs text-slate-700 dark:text-neutral-300 font-medium">
+              Signed in as <span className="font-mono font-bold text-slate-900 dark:text-neutral-100">{owner.email}</span>
+            </p>
+            <p className="text-[11px] text-slate-500 dark:text-neutral-400 font-sans">
+              Ending your session will securely sign you out of this browser and return to the login screen.
+            </p>
+          </div>
+
+          {onLogout && (
+            <button
+              type="button"
+              onClick={onLogout}
+              className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-900/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50 rounded-lg text-xs font-mono font-bold transition-colors cursor-pointer shrink-0 shadow-2xs"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Log Out of Tranzit</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Section 4: DANGER ZONE - Account Deletion (Real Accounts Only) */}
       {!isDemo && (
         <div className="bg-rose-50/70 dark:bg-rose-950/20 border-2 border-rose-200 dark:border-rose-900/60 rounded-xl p-5 sm:p-6 space-y-4">
           <div className="flex items-center space-x-2.5 text-rose-700 dark:text-rose-400 border-b border-rose-200 dark:border-rose-900/40 pb-3">

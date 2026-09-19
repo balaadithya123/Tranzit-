@@ -26,6 +26,8 @@ const FleetMaintenanceView = lazy(() => import('./components/FleetMaintenanceVie
 const FuelPerksView = lazy(() => import('./components/FuelPerksView').then(m => ({ default: m.FuelPerksView })));
 const DriversView = lazy(() => import('./components/DriversView').then(m => ({ default: m.DriversView })));
 const SettingsView = lazy(() => import('./components/SettingsView').then(m => ({ default: m.SettingsView })));
+const SubscriptionView = lazy(() => import('./components/SubscriptionView').then(m => ({ default: m.SubscriptionView })));
+const AdminPricingSettingsView = lazy(() => import('./components/AdminPricingSettingsView').then(m => ({ default: m.AdminPricingSettingsView })));
 
 function MainApp() {
   const [currentOwner, setCurrentOwner] = useState<OwnerProfile | null>(null);
@@ -60,52 +62,50 @@ function MainApp() {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
-          // Fast fetch with timeout
+          // Fetch current owner profile from Firestore
           let ownerDoc: any = null;
           try {
-            ownerDoc = await Promise.race([
-              getDoc(doc(db, 'owners', user.uid)),
-              new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000))
-            ]);
+            ownerDoc = await getDoc(doc(db, 'owners', user.uid));
           } catch (fetchErr) {
-            console.warn("Fast getDoc timeout or notice:", fetchErr);
+            console.warn("Notice retrieving owner document:", fetchErr);
           }
 
           if (ownerDoc && ownerDoc.exists()) {
             const rawData = ownerDoc.data() as OwnerProfile;
             const userEmail = (user.email || '').toLowerCase();
-            const isDemo = userEmail === DEMO_SaaS_EMAIL.toLowerCase() || userEmail === DEMO_LEASE_EMAIL.toLowerCase();
-            const hasDemoName = rawData.name === "Rajesh Sharma" || rawData.name === "Vikramaditya Verma" || rawData.name === "Fleet Owner";
             
-            let profile: OwnerProfile = {
+            // STRICTLY PRESERVE user's saved company name and fleet profile.
+            // NEVER overwrite companyName or name on reload.
+            const properName = rawData.name?.trim() || user.displayName || formatEmailToName(userEmail);
+            const properCompany = rawData.companyName?.trim() || (user.displayName ? `${user.displayName} Travels` : `${properName} Logistics`);
+            
+            const profile: OwnerProfile = {
               ...rawData,
               id: user.uid,
               uid: user.uid,
-              email: userEmail || rawData.email
+              email: userEmail || rawData.email,
+              name: properName,
+              companyName: properCompany
             };
 
-            if (!isDemo && (hasDemoName || user.displayName)) {
-              const properName = user.displayName || formatEmailToName(userEmail);
-              profile = {
-                ...profile,
+            // Only update Firestore if initial profile was completely missing name or companyName
+            if (!rawData.companyName?.trim() || !rawData.name?.trim()) {
+              setDoc(doc(db, 'owners', user.uid), {
                 name: properName,
-                companyName: user.displayName ? `${user.displayName} Travels` : `${properName} Logistics`
-              };
-              try {
-                await setDoc(doc(db, 'owners', user.uid), profile, { merge: true });
-              } catch (saveErr) {
-                console.warn("Notice updating owner document:", saveErr);
-              }
+                companyName: properCompany
+              }, { merge: true }).catch(saveErr => {
+                console.warn("Notice setting default profile fields:", saveErr);
+              });
             }
 
             setCurrentOwner(profile);
             saveLocalOwner(profile);
           } else {
             // Document does not exist in Firestore yet (e.g. brand-new Google Sign-In)
-            // DO NOT sign out! Check local cache or create initial empty owner profile
             const cached = getSavedLocalOwner();
-            if (cached && cached.id === user.uid) {
+            if (cached && cached.id === user.uid && cached.companyName) {
               setCurrentOwner(cached);
+              setDoc(doc(db, 'owners', user.uid), cached, { merge: true }).catch(() => {});
             } else {
               const userEmail = (user.email || '').toLowerCase();
               const properName = user.displayName || formatEmailToName(userEmail);
@@ -121,7 +121,10 @@ function MainApp() {
                 activeBusesCount: 0,
                 todayRevenue: 0,
                 walletBalance: 0,
-                saasFeePerBus: 4500,
+                subscriptionTier: 'starter',
+                subscriptionPlanName: 'Starter',
+                saasFeePerBus: 649,
+                isAdmin: false,
                 nextPayoutDate: "",
                 nextPayoutAmount: 0,
                 avgDailyRiders: 0,
@@ -426,6 +429,25 @@ function MainApp() {
                 owner={currentOwner} 
                 onAccountDeleted={handleAccountDeleted}
                 onOpenReportsModal={() => setIsReportsModalOpen(true)}
+                onNavigateTab={setActiveTab}
+                onLogout={handleLogout}
+              />
+            )}
+
+            {activeTab === 'subscription' && (
+              <SubscriptionView 
+                owner={currentOwner} 
+                onNavigateTab={setActiveTab}
+                onPlanUpdated={(updatedFields) => {
+                  setCurrentOwner(prev => prev ? { ...prev, ...updatedFields } : null);
+                }}
+              />
+            )}
+
+            {activeTab === 'admin-pricing' && (
+              <AdminPricingSettingsView 
+                owner={currentOwner} 
+                onNavigateTab={setActiveTab}
               />
             )}
           </Suspense>
@@ -465,6 +487,7 @@ function MainApp() {
             } catch (e) {}
             setCurrentOwner(null);
           }}
+          onLogout={handleLogout}
         />
       )}
 
@@ -494,6 +517,7 @@ function MainApp() {
             setIsCommandPaletteOpen(false);
             setIsEditProfileOpen(true);
           }}
+          onLogout={handleLogout}
         />
       )}
 

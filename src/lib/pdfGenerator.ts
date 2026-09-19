@@ -389,13 +389,15 @@ export function generateEarningsReportPDF(options: EarningsReportOptions): void 
     doc.setTextColor(71, 85, 105);
 
     const isSaaS = owner.planType === 'SaaS';
-    const saasFee = isSaaS ? (owner.saasFeePerBus || 4500) * (owner.activeBusesCount ?? 3) : 0;
+    const activeBuses = owner.activeBusesCount ?? 0;
+    const ratePerBus = owner.saasFeePerBus || (activeBuses <= 5 ? 649 : activeBuses <= 20 ? 899 : 1599);
+    const saasFee = isSaaS ? ratePerBus * activeBuses : 0;
     const netSettlement = isSaaS ? Math.max(0, totalRevenue - saasFee) : totalRevenue;
 
     doc.text(`Gross Revenue Collected: ${formatPDFCurrency(totalRevenue)}`, 18, summaryBoxY + 12);
     doc.text(
       isSaaS
-        ? `Platform SaaS Fee (${owner.activeBusesCount ?? 3} buses @ Rs. 4,500/mo): -${formatPDFCurrency(saasFee)}`
+        ? `Platform SaaS Fee (${activeBuses} buses @ Rs. ${ratePerBus.toLocaleString('en-IN')}/mo - ${owner.subscriptionPlanName || 'Tier'} Plan): -${formatPDFCurrency(saasFee)}`
         : `Lease Agreement Fixed Tier: Direct Disbursal to Operator Account`,
       18,
       summaryBoxY + 17

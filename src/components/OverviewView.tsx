@@ -109,8 +109,9 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
   const urgentDrivers = drivers.filter(d => getLicenseValidityInfo(d.licenseExpiryDate).isUrgent);
 
   // Financial Calculations
-  const saasFeePerBus = owner.saasFeePerBus || 4500;
+  const saasFeePerBus = owner.saasFeePerBus || (totalBusesCount <= 5 ? 649 : totalBusesCount <= 20 ? 899 : 1599);
   const totalMonthlySaasFee = saasFeePerBus * totalBusesCount;
+  const currentPlanTierName = owner.subscriptionPlanName || (totalBusesCount <= 5 ? 'Starter' : totalBusesCount <= 20 ? 'Growth' : 'Enterprise');
 
   // Payout / Renewal Date Logic
   const getDaysUntilPayout = () => {
@@ -553,8 +554,18 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
             {isSaaS ? (
               <div className="space-y-3 text-xs">
                 <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                  <div className="text-[10px] font-mono uppercase font-bold text-amber-800 dark:text-amber-300">
-                    Monthly Fee
+                  <div className="flex items-center justify-between">
+                    <div className="text-[10px] font-mono uppercase font-bold text-amber-800 dark:text-amber-300">
+                      SaaS {currentPlanTierName} Plan
+                    </div>
+                    {onNavigateTab && (
+                      <button
+                        onClick={() => onNavigateTab('subscription')}
+                        className="text-[10px] font-mono font-bold text-amber-700 dark:text-amber-400 hover:underline cursor-pointer"
+                      >
+                        Change Tier →
+                      </button>
+                    )}
                   </div>
                   <div className="text-lg font-mono font-bold text-slate-900 dark:text-neutral-100 mt-0.5">
                     {formatINR(totalMonthlySaasFee)} / month

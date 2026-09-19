@@ -16,9 +16,12 @@ import {
   ChevronRight, 
   X,
   Keyboard,
-  Settings
+  Settings,
+  CreditCard,
+  Sliders
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
+import { isPlatformAdmin } from '../lib/pricingService';
 
 interface SidebarProps {
   owner: OwnerProfile;
@@ -292,6 +295,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </div>
                   </button>
                 )}
+
+                {/* Subscription Plan Tiers */}
+                <button
+                  onClick={() => handleNavClick('subscription')}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs cursor-pointer ${navItemClass(
+                    activeTab === 'subscription'
+                  )}`}
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <CreditCard className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    <span>Subscription</span>
+                  </div>
+                  <div className="flex items-center space-x-1.5">
+                    <span className="text-[9px] font-mono px-1.5 py-0.2 bg-amber-500/15 text-amber-700 dark:text-amber-300 rounded font-bold border border-amber-500/30">
+                      Tiers
+                    </span>
+                    {activeTab === 'subscription' && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                    )}
+                  </div>
+                </button>
               </div>
             </div>
 
@@ -346,6 +370,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </button>
               </div>
             </div>
+
+            {/* Section 5: Platform Admin Controls (Admin Only) */}
+            {isPlatformAdmin(owner) && (
+              <div>
+                <div className="px-3 mb-1 text-[10px] font-mono uppercase tracking-widest text-amber-600 dark:text-amber-400 font-bold flex items-center justify-between">
+                  <span>Platform Admin</span>
+                  <span className="text-[9px] font-mono px-1.5 py-0.2 bg-amber-500 text-slate-950 rounded font-black">
+                    ADMIN
+                  </span>
+                </div>
+                <div className="space-y-0.5">
+                  <button
+                    onClick={() => handleNavClick('admin-pricing')}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs cursor-pointer ${navItemClass(
+                      activeTab === 'admin-pricing'
+                    )}`}
+                  >
+                    <div className="flex items-center space-x-2.5">
+                      <Sliders className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                      <span>Tier Pricing Settings</span>
+                    </div>
+                    {activeTab === 'admin-pricing' && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
           </nav>
         </div>
 
@@ -389,10 +441,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Sign Out Button */}
           <button
             onClick={onLogout}
-            className="w-full py-1.5 px-3 text-slate-500 dark:text-neutral-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/10 rounded-lg border border-transparent hover:border-red-500/20 transition-colors text-xs font-medium flex items-center justify-center space-x-1.5 cursor-pointer"
+            className="w-full py-2 px-3 text-rose-700 dark:text-rose-400 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-900/40 rounded-lg border border-rose-200 dark:border-rose-800/50 transition-colors text-xs font-mono font-bold flex items-center justify-center space-x-2 cursor-pointer shadow-2xs"
+            title="Sign Out / Log Out of Tranzit"
           >
             <LogOut className="w-3.5 h-3.5" />
-            <span>Sign Out</span>
+            <span>Sign Out / Log Out</span>
           </button>
         </div>
       </aside>

@@ -1,5 +1,15 @@
 export type PlanType = 'SaaS' | 'Lease';
 
+export type SubscriptionTierId = 'starter' | 'growth' | 'enterprise';
+
+export interface TierPricingConfig {
+  starterRate: number; // e.g. 649/bus/mo
+  growthRate: number; // e.g. 899/bus/mo
+  enterpriseRate: number; // e.g. 1599/bus/mo starting
+  updatedAt?: string;
+  updatedBy?: string;
+}
+
 export type ServiceStatus = 'Good' | 'Due' | 'Overdue';
 
 export interface OwnerProfile {
@@ -9,15 +19,19 @@ export interface OwnerProfile {
   email: string;
   companyName: string;
   planType: PlanType;
+  subscriptionTier?: SubscriptionTierId;
+  subscriptionPlanName?: string; // 'Starter' | 'Growth' | 'Enterprise'
+  subscriptionSelectedAt?: string;
   activeBusesCount: number;
   todayRevenue: number; // for SaaS
   walletBalance?: number; // for SaaS pending payout wallet
-  saasFeePerBus?: number; // e.g. 4500/bus/mo
+  saasFeePerBus?: number; // e.g. 649/bus/mo (derived from tier)
   nextPayoutDate: string; // for Lease & SaaS settlement
   nextPayoutAmount: number; // for Lease & SaaS settlement
   avgDailyRiders: number;
   city: string;
   phone?: string;
+  isAdmin?: boolean;
   createdAt?: string;
 }
 

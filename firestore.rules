@@ -2,8 +2,96 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
+    
+    // Helper function to check if the caller is an authenticated platform admin
+    function isAdmin() {
+      return request.auth != null && (
+        request.auth.token.admin == true ||
+        (exists(/databases/$(database)/documents/owners/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/owners/$(request.auth.uid)).data.isAdmin == true)
+      );
+    }
+
+    // Helper to check if resource belongs to authenticated owner or demo data
+    function isOwnerOrAdmin(ownerId) {
+      return (request.auth != null && (request.auth.uid == ownerId || isAdmin())) ||
+             ownerId == 'demo-saas-owner-rajesh' ||
+             ownerId == 'demo-lease-owner-vikram';
+    }
+
+    // Platform pricing settings: Everyone can read fixed tier rates, only Admin can write
+    match /platform_settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Owner profiles
+    match /owners/{ownerId} {
+      allow read: if isOwnerOrAdmin(ownerId);
+      allow create: if (request.auth != null && request.auth.uid == ownerId) ||
+                       ownerId == 'demo-saas-owner-rajesh' ||
+                       ownerId == 'demo-lease-owner-vikram' ||
+                       isAdmin();
+      allow update: if (request.auth != null && (request.auth.uid == ownerId || isAdmin())) ||
+                       ownerId == 'demo-saas-owner-rajesh' ||
+                       ownerId == 'demo-lease-owner-vikram';
+      allow delete: if (request.auth != null && (request.auth.uid == ownerId || isAdmin())) ||
+                       ownerId == 'demo-saas-owner-rajesh' ||
+                       ownerId == 'demo-lease-owner-vikram';
+    }
+
+    // Fleet buses
+    match /buses/{busId} {
+      allow read: if isOwnerOrAdmin(resource.data.ownerId);
+      allow create: if (request.auth != null && (request.resource.data.ownerId == request.auth.uid || isAdmin())) ||
+                       request.resource.data.ownerId == 'demo-saas-owner-rajesh' ||
+                       request.resource.data.ownerId == 'demo-lease-owner-vikram';
+      allow update, delete: if isOwnerOrAdmin(resource.data.ownerId);
+    }
+
+    // Routes
+    match /routes/{routeId} {
+      allow read: if isOwnerOrAdmin(resource.data.ownerId);
+      allow create: if (request.auth != null && (request.resource.data.ownerId == request.auth.uid || isAdmin())) ||
+                       request.resource.data.ownerId == 'demo-saas-owner-rajesh' ||
+                       request.resource.data.ownerId == 'demo-lease-owner-vikram';
+      allow update, delete: if isOwnerOrAdmin(resource.data.ownerId);
+    }
+
+    // Earnings
+    match /earnings/{entryId} {
+      allow read: if isOwnerOrAdmin(resource.data.ownerId);
+      allow create: if (request.auth != null && (request.resource.data.ownerId == request.auth.uid || isAdmin())) ||
+                       request.resource.data.ownerId == 'demo-saas-owner-rajesh' ||
+                       request.resource.data.ownerId == 'demo-lease-owner-vikram';
+      allow update, delete: if isOwnerOrAdmin(resource.data.ownerId);
+    }
+
+    // Payouts
+    match /payouts/{payoutId} {
+      allow read: if isOwnerOrAdmin(resource.data.ownerId);
+      allow create: if (request.auth != null && (request.resource.data.ownerId == request.auth.uid || isAdmin())) ||
+                       request.resource.data.ownerId == 'demo-saas-owner-rajesh' ||
+                       request.resource.data.ownerId == 'demo-lease-owner-vikram';
+      allow update, delete: if isOwnerOrAdmin(resource.data.ownerId);
+    }
+
+    // Maintenance records
+    match /maintenance/{maintId} {
+      allow read: if isOwnerOrAdmin(resource.data.ownerId);
+      allow create: if (request.auth != null && (request.resource.data.ownerId == request.auth.uid || isAdmin())) ||
+                       request.resource.data.ownerId == 'demo-saas-owner-rajesh' ||
+                       request.resource.data.ownerId == 'demo-lease-owner-vikram';
+      allow update, delete: if isOwnerOrAdmin(resource.data.ownerId);
+    }
+
+    // Drivers
+    match /drivers/{driverId} {
+      allow read: if isOwnerOrAdmin(resource.data.ownerId);
+      allow create: if (request.auth != null && (request.resource.data.ownerId == request.auth.uid || isAdmin())) ||
+                       request.resource.data.ownerId == 'demo-saas-owner-rajesh' ||
+                       request.resource.data.ownerId == 'demo-lease-owner-vikram';
+      allow update, delete: if isOwnerOrAdmin(resource.data.ownerId);
     }
   }
 }

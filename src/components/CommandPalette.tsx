@@ -15,10 +15,14 @@ import {
   CornerDownLeft,
   MapPin,
   Settings,
-  Trash2
+  Trash2,
+  CreditCard,
+  Sliders,
+  LogOut
 } from 'lucide-react';
 import { Bus, Driver, OwnerProfile, RouteItem } from '../types';
 import { useTheme } from '../context/ThemeContext';
+import { isPlatformAdmin } from '../lib/pricingService';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -30,6 +34,7 @@ interface CommandPaletteProps {
   onNavigateTab: (tab: string) => void;
   onOpenReportsModal: () => void;
   onOpenProfileModal: () => void;
+  onLogout?: () => void;
 }
 
 interface CommandItem {
@@ -51,7 +56,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   routes = [],
   onNavigateTab,
   onOpenReportsModal,
-  onOpenProfileModal
+  onOpenProfileModal,
+  onLogout
 }) => {
   const [queryText, setQueryText] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -136,6 +142,15 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     });
 
     list.push({
+      id: 'nav-subscription',
+      title: 'Subscription & Tier Pricing',
+      subtitle: 'Starter (₹649), Growth (₹899), Enterprise (₹1,599) fixed per-bus plans',
+      category: 'Navigation',
+      icon: CreditCard,
+      action: () => { onNavigateTab('subscription'); onClose(); }
+    });
+
+    list.push({
       id: 'nav-settings',
       title: 'Settings & Fleet Administration',
       subtitle: 'Company profile, commercial plan, depot city, delete account',
@@ -144,6 +159,18 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       action: () => { onNavigateTab('settings'); onClose(); },
       badge: '7'
     });
+
+    if (isPlatformAdmin(owner)) {
+      list.push({
+        id: 'nav-admin-pricing',
+        title: 'Admin: Tier Pricing Controls',
+        subtitle: 'Configure platform fixed rates for Starter, Growth, and Enterprise',
+        category: 'Navigation',
+        icon: Sliders,
+        action: () => { onNavigateTab('admin-pricing'); onClose(); },
+        badge: 'ADMIN'
+      });
+    }
 
     // Quick Actions
     list.push({
@@ -190,6 +217,17 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       icon: resolvedTheme === 'dark' ? Sun : Moon,
       action: () => { toggleTheme(); onClose(); }
     });
+
+    if (onLogout) {
+      list.push({
+        id: 'act-logout',
+        title: 'Sign Out / Log Out of Tranzit',
+        subtitle: `End session for ${owner.email}`,
+        category: 'Actions',
+        icon: LogOut,
+        action: () => { onClose(); onLogout(); }
+      });
+    }
 
     // Dynamic Bus entries
     buses.forEach(bus => {

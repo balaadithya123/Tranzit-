@@ -3,13 +3,15 @@ import { OwnerProfile } from '../types';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { isDemoAccount, cascadeDeleteOwnerAccount } from '../lib/accountService';
-import { MapPin, Building2, Phone, Users, X, Check, Calculator, Bus, Trash2, AlertTriangle, KeyRound, Loader2 } from 'lucide-react';
+import { saveLocalOwner } from '../lib/firebaseAuthHelper';
+import { MapPin, Building2, Phone, Users, X, Check, Calculator, Bus, Trash2, AlertTriangle, KeyRound, Loader2, CreditCard, LogOut } from 'lucide-react';
 
 interface EditProfileModalProps {
   owner: OwnerProfile;
   isOpen: boolean;
   onClose: () => void;
   onAccountDeleted?: () => void;
+  onLogout?: () => void;
 }
 
 const INDIAN_HUBS = [
@@ -27,14 +29,13 @@ const INDIAN_HUBS = [
   "Delhi NCR"
 ];
 
-export const EditProfileModal: React.FC<EditProfileModalProps> = ({ owner, isOpen, onClose, onAccountDeleted }) => {
+export const EditProfileModal: React.FC<EditProfileModalProps> = ({ owner, isOpen, onClose, onAccountDeleted, onLogout }) => {
   const [name, setName] = useState(owner.name || '');
   const [companyName, setCompanyName] = useState(owner.companyName || '');
   const [city, setCity] = useState(owner.city || 'Bengaluru');
   const [phone, setPhone] = useState(owner.phone || '+91 98450 12345');
   const [activeBusesCount, setActiveBusesCount] = useState<number>(owner.activeBusesCount ?? 0);
   const [avgDailyRiders, setAvgDailyRiders] = useState(owner.avgDailyRiders || 0);
-  const [saasFeePerBus, setSaasFeePerBus] = useState(owner.saasFeePerBus || 4500);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -54,7 +55,6 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ owner, isOpe
     setPhone(owner.phone || '+91 98450 12345');
     setActiveBusesCount(owner.activeBusesCount ?? 0);
     setAvgDailyRiders(owner.avgDailyRiders || 0);
-    setSaasFeePerBus(owner.saasFeePerBus || 4500);
     setShowConfirmDelete(false);
     setConfirmDeleteInput('');
     setDeleteError(null);
@@ -86,11 +86,11 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ owner, isOpe
         city,
         phone,
         activeBusesCount: Number(activeBusesCount),
-        avgDailyRiders: Number(avgDailyRiders),
-        saasFeePerBus: Number(saasFeePerBus)
+        avgDailyRiders: Number(avgDailyRiders)
       };
 
       await setDoc(doc(db, 'owners', owner.id), updatedProfile, { merge: true });
+      saveLocalOwner({ ...owner, ...updatedProfile });
       setSuccess(true);
       setTimeout(() => {
         setSuccess(false);
@@ -271,21 +271,28 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ owner, isOpe
               </div>
             </div>
 
-            {/* SaaS Fee / Bus if SaaS */}
+            {/* SaaS Plan Tier Info (Read-Only) */}
             {isSaaS && (
-              <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                <label className="block text-xs font-mono uppercase font-bold text-amber-800 dark:text-amber-300 mb-1 flex items-center space-x-1">
-                  <Calculator className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                  <span>SaaS Flat Subscription Fee (₹ / Bus / Month)</span>
-                </label>
-                <input
-                  type="number"
-                  value={saasFeePerBus}
-                  onChange={(e) => setSaasFeePerBus(Number(e.target.value))}
-                  className="w-full px-3 py-1.5 text-sm font-mono font-bold border border-amber-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-900 text-slate-900 dark:text-neutral-100 focus:outline-none focus:border-amber-500"
-                />
-                <p className="text-[11px] text-amber-900/80 dark:text-amber-300/80 mt-1 font-mono">
-                  Current total fee: ₹{saasFeePerBus.toLocaleString('en-IN')} × {activeBusesCount} buses = ₹{(saasFeePerBus * activeBusesCount).toLocaleString('en-IN')}/mo
+              <div className="p-3.5 bg-amber-500/10 border border-amber-500/25 rounded-xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <CreditCard className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    <span className="text-xs font-mono uppercase font-bold text-amber-900 dark:text-amber-200">
+                      SaaS Subscription Plan
+                    </span>
+                  </div>
+                  <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-amber-200/70 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700/60">
+                    {owner.subscriptionPlanName || (activeBusesCount <= 5 ? 'Starter' : activeBusesCount <= 20 ? 'Growth' : 'Enterprise')} Tier
+                  </span>
+                </div>
+                <div className="mt-2 text-xs font-mono text-slate-700 dark:text-neutral-300 flex items-center justify-between">
+                  <span>Per-Bus Platform Rate:</span>
+                  <span className="font-bold text-slate-900 dark:text-neutral-100">
+                    ₹{(owner.saasFeePerBus || (activeBusesCount <= 5 ? 649 : activeBusesCount <= 20 ? 899 : 1599)).toLocaleString('en-IN')} / bus / mo
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-neutral-400 mt-2 font-sans">
+                  Rates are fixed by platform administration and cannot be edited manually. Visit the Subscription page to view or select plan tiers.
                 </p>
               </div>
             )}
@@ -395,29 +402,48 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ owner, isOpe
           </div>
 
           {/* Sticky Action Buttons Footer */}
-          <div className="p-4 sm:px-6 bg-slate-50 dark:bg-neutral-900/80 border-t border-slate-200 dark:border-neutral-800 flex items-center justify-end space-x-3 flex-shrink-0">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-xs font-mono uppercase text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white rounded-lg cursor-pointer"
-            >
-              Cancel
-            </button>
+          <div className="p-4 sm:px-6 bg-slate-50 dark:bg-neutral-900/80 border-t border-slate-200 dark:border-neutral-800 flex items-center justify-between space-x-3 flex-shrink-0">
+            {onLogout ? (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onLogout();
+                }}
+                className="px-3 py-2 text-xs font-mono font-bold text-rose-700 dark:text-rose-400 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 rounded-lg flex items-center space-x-1.5 transition-colors cursor-pointer border border-rose-200 dark:border-rose-900/60 shadow-2xs"
+                title="Sign Out / Log Out"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Sign Out</span>
+              </button>
+            ) : (
+              <div />
+            )}
 
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-amber-500 dark:hover:bg-amber-400 text-white dark:text-slate-950 text-xs font-mono uppercase font-bold tracking-wider rounded-lg transition-colors flex items-center space-x-2 cursor-pointer shadow-xs"
-            >
-              {success ? (
-                <>
-                  <Check className="w-4 h-4 text-emerald-400 dark:text-slate-950" />
-                  <span>Hub Updated!</span>
-                </>
-              ) : (
-                <span>{saving ? 'Saving...' : 'Update Hub & Profile'}</span>
-              )}
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-xs font-mono uppercase text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white rounded-lg cursor-pointer"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                disabled={saving}
+                className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-amber-500 dark:hover:bg-amber-400 text-white dark:text-slate-950 text-xs font-mono uppercase font-bold tracking-wider rounded-lg transition-colors flex items-center space-x-2 cursor-pointer shadow-xs"
+              >
+                {success ? (
+                  <>
+                    <Check className="w-4 h-4 text-emerald-400 dark:text-slate-950" />
+                    <span>Hub Updated!</span>
+                  </>
+                ) : (
+                  <span>{saving ? 'Saving...' : 'Update Hub & Profile'}</span>
+                )}
+              </button>
+            </div>
           </div>
         </form>
       </div>

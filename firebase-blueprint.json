@@ -14,6 +14,10 @@
         "todayRevenue": { "type": "number" },
         "walletBalance": { "type": "number" },
         "saasFeePerBus": { "type": "number" },
+        "subscriptionTier": { "type": "string" },
+        "subscriptionPlanName": { "type": "string" },
+        "subscriptionSelectedAt": { "type": "string" },
+        "isAdmin": { "type": "boolean" },
         "nextPayoutDate": { "type": "string" },
         "nextPayoutAmount": { "type": "number" },
         "avgDailyRiders": { "type": "number" },
@@ -134,9 +138,25 @@
         "tripsCompleted": { "type": "number" },
         "notes": { "type": "string" }
       }
+    },
+    "PlatformPricing": {
+      "title": "Platform Pricing Settings",
+      "description": "Admin configurable SaaS tier rates per bus per month",
+      "type": "object",
+      "properties": {
+        "starterRate": { "type": "number" },
+        "growthRate": { "type": "number" },
+        "enterpriseRate": { "type": "number" },
+        "updatedAt": { "type": "string" },
+        "updatedBy": { "type": "string" }
+      }
     }
   },
   "firestore": {
+    "/platform_settings/{settingId}": {
+      "schema": "PlatformPricing",
+      "description": "Platform global subscription tier rates"
+    },
     "/owners/{ownerId}": {
       "schema": "Owner",
       "description": "Owner profile data"

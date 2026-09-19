@@ -197,12 +197,12 @@ export const Header: React.FC<HeaderProps> = ({
           {onLogout && (
             <button
               onClick={onLogout}
-              className="p-2 bg-white dark:bg-neutral-900 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-500 hover:text-rose-600 dark:text-neutral-400 dark:hover:text-rose-400 border border-slate-200 dark:border-neutral-800 hover:border-rose-300 dark:hover:border-rose-800 rounded-lg transition-colors cursor-pointer shadow-2xs flex items-center space-x-1 text-xs font-mono"
-              title="Sign Out"
+              className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-700 hover:text-rose-800 dark:text-rose-300 dark:hover:text-rose-200 border border-rose-200 dark:border-rose-800/60 rounded-lg transition-colors cursor-pointer shadow-2xs flex items-center space-x-1.5 text-xs font-mono font-semibold"
+              title="Sign Out / Log Out of Tranzit"
               aria-label="Sign Out"
             >
-              <LogOut className="w-4 h-4" />
-              <span className="hidden xl:inline text-[11px] font-semibold">Exit</span>
+              <LogOut className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+              <span className="hidden sm:inline">Logout</span>
             </button>
           )}
         </div>

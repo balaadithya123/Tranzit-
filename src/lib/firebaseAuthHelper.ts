@@ -193,23 +193,15 @@ export async function loginWithGoogleFallback(options?: {
 
     if (ownerDoc && ownerDoc.exists()) {
       const rawData = ownerDoc.data() as OwnerProfile;
-      const hasDemoName = rawData.name === "Rajesh Sharma" || rawData.name === "Vikramaditya Verma" || rawData.name === "Fleet Owner";
       
+      const correctName = rawData.name?.trim() || options?.customProfile?.name?.trim() || user.displayName || formatEmailToName(userEmail);
+      const correctCompany = rawData.companyName?.trim() || options?.customProfile?.companyName?.trim() || (user.displayName ? `${user.displayName} Travels` : `${correctName} Logistics`);
+
       let profile: OwnerProfile = {
         ...rawData,
         id: uid,
         uid: uid,
-        email: userEmail
-      };
-
-      const correctName = options?.customProfile?.name?.trim() || user.displayName || (hasDemoName ? formatEmailToName(userEmail) : rawData.name);
-      const correctCompany = options?.customProfile?.companyName?.trim() || 
-        (rawData.companyName && rawData.companyName !== "Shree Royal Travels" && rawData.companyName !== "Verma Fleet Operations"
-          ? rawData.companyName
-          : user.displayName ? `${user.displayName} Travels` : `${correctName} Logistics`);
-
-      profile = {
-        ...profile,
+        email: userEmail,
         name: correctName,
         companyName: correctCompany,
         ...(options?.customProfile?.city ? { city: options.customProfile.city.trim() } : {}),
@@ -218,10 +210,15 @@ export async function loginWithGoogleFallback(options?: {
 
       saveLocalOwner(profile);
 
-      // Save to Firestore in background without blocking login
-      setDoc(doc(db, 'owners', uid), profile, { merge: true }).catch(saveErr => {
-        console.warn("Notice syncing owner profile in background:", saveErr);
-      });
+      // Only update Firestore if fields were missing
+      if (!rawData.companyName?.trim() || !rawData.name?.trim()) {
+        setDoc(doc(db, 'owners', uid), {
+          name: correctName,
+          companyName: correctCompany
+        }, { merge: true }).catch(saveErr => {
+          console.warn("Notice syncing owner profile in background:", saveErr);
+        });
+      }
 
       return profile;
     }
