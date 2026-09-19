@@ -468,7 +468,7 @@ export function generateMaintenanceReportPDF(options: MaintenanceReportOptions):
     },
     {
       label: 'Active Fleet in Service',
-      value: `${activeBuses} / ${buses.length || owner.activeBusesCount || 3}`,
+      value: `${activeBuses} / ${buses.length > 0 ? buses.length : (owner.activeBusesCount ?? 3)}`,
       hint: 'Operational road fitness',
       color: [5, 150, 105] // Emerald
     },
@@ -687,7 +687,7 @@ export function generateCombinedOperationsReportPDF(options: CombinedReportOptio
     },
     {
       label: 'Active Road Fleet',
-      value: `${activeBuses} / ${buses.length || owner.activeBusesCount || 3}`,
+      value: `${activeBuses} / ${buses.length > 0 ? buses.length : (owner.activeBusesCount ?? 3)}`,
       hint: 'Fleet uptime',
       color: [79, 70, 229] // Indigo
     }

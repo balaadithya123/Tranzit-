@@ -17,7 +17,7 @@ export const LeaseTermsPayoutsView: React.FC<LeaseTermsPayoutsViewProps> = ({ ow
   // Modal State for adding/simulating payout record
   const [isPayoutModalOpen, setIsPayoutModalOpen] = useState(false);
   const [payoutDate, setPayoutDate] = useState('2026-11-01');
-  const [payoutAmount, setPayoutAmount] = useState<number>(255000);
+  const [payoutAmount, setPayoutAmount] = useState<number>(0);
   const [payoutStatus, setPayoutStatus] = useState<'Paid' | 'Scheduled' | 'Processing'>('Scheduled');
 
   // Subscribe to buses and payouts in Firestore
@@ -52,7 +52,7 @@ export const LeaseTermsPayoutsView: React.FC<LeaseTermsPayoutsViewProps> = ({ ow
     };
   }, [owner.id]);
 
-  const totalMonthlyLeaseGuarantee = buses.reduce((sum, b) => sum + (b.leaseValue || 85000), 0);
+  const totalMonthlyLeaseGuarantee = buses.reduce((sum, b) => sum + (b.leaseValue || 0), 0);
 
   const handleAddPayoutRecord = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,25 +76,25 @@ export const LeaseTermsPayoutsView: React.FC<LeaseTermsPayoutsViewProps> = ({ ow
       {/* Title Bar */}
       <div className="bg-white dark:bg-[#121214] border border-slate-200 dark:border-neutral-800 p-5 sm:p-6 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs transition-colors">
         <div>
-          <div className="flex items-center space-x-2 text-xs font-mono text-teal-700 dark:text-teal-400 uppercase tracking-widest mb-1.5 font-bold">
+          <div className="flex items-center space-x-2 text-xs font-mono text-teal-800 dark:text-teal-400 uppercase tracking-widest mb-1.5 font-bold">
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Tranzit Fleet Lease Contract</span>
+            <span>Lease</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-neutral-100 tracking-tight font-sans">
             Lease Terms & Guaranteed Payouts
           </h2>
           <p className="text-xs text-slate-500 dark:text-neutral-400 font-sans mt-0.5">
-            Tranzit operates your leased vehicles entirely. Fixed monthly payouts are credited directly on the 1st of every month.
+            Fixed payouts credited on the 1st of each month.
           </p>
         </div>
 
         {/* Guaranteed Monthly Payout Box */}
         <div className="bg-teal-50 dark:bg-neutral-900 border border-teal-200 dark:border-neutral-800 p-4 rounded-xl text-left md:text-right shadow-2xs">
           <span className="text-[10px] font-mono uppercase text-teal-900 dark:text-teal-300 block font-bold">
-            Total Monthly Fixed Lease Guarantee
+            Monthly Guarantee
           </span>
           <span className="text-2xl font-mono font-bold text-teal-950 dark:text-teal-400">
-            {formatINR(totalMonthlyLeaseGuarantee || 255000)} / mo
+            {formatINR(totalMonthlyLeaseGuarantee || 0)} / mo
           </span>
         </div>
       </div>
@@ -106,7 +106,7 @@ export const LeaseTermsPayoutsView: React.FC<LeaseTermsPayoutsViewProps> = ({ ow
             Leased Bus Contracts ({buses.length})
           </span>
           <span className="text-[11px] font-mono text-teal-800 dark:text-teal-300 bg-teal-100 dark:bg-teal-950/40 px-2.5 py-0.5 rounded-md border border-teal-300 dark:border-teal-800/60 font-semibold">
-            Tranzit Managed Operations
+            Managed by Tranzit
           </span>
         </div>
 
@@ -126,7 +126,7 @@ export const LeaseTermsPayoutsView: React.FC<LeaseTermsPayoutsViewProps> = ({ ow
               {buses.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-8 text-center text-slate-400 dark:text-neutral-500 font-mono">
-                    No leased vehicles found in database.
+                    No leased vehicles found.
                   </td>
                 </tr>
               ) : (
@@ -142,10 +142,10 @@ export const LeaseTermsPayoutsView: React.FC<LeaseTermsPayoutsViewProps> = ({ ow
                       {bus.capacity} Seats
                     </td>
                     <td className="py-3.5 px-4 font-mono font-bold text-teal-800 dark:text-teal-400 text-sm">
-                      {formatINR(bus.leaseValue || 85000)} / mo
+                      {formatINR(bus.leaseValue || 0)} / mo
                     </td>
                     <td className="py-3.5 px-4 font-mono text-slate-600 dark:text-neutral-400">
-                      {bus.renewalDate || '2027-03-31'}
+                      {bus.renewalDate || '—'}
                     </td>
                     <td className="py-3.5 px-4 text-right">
                       <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase rounded-md bg-teal-100 dark:bg-teal-950/40 text-teal-900 dark:text-teal-300 border border-teal-300 dark:border-teal-800/60">

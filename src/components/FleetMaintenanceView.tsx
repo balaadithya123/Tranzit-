@@ -26,21 +26,21 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
   const [serviceType, setServiceType] = useState('Scheduled Preventive Service');
   const [serviceDate, setServiceDate] = useState(new Date().toISOString().split('T')[0]);
   const [nextDueDate, setNextDueDate] = useState('');
-  const [cost, setCost] = useState<number>(12000);
-  const [mechanicShop, setMechanicShop] = useState('Tranzit Central Fleet Workshop');
-  const [notes, setNotes] = useState('Engine oil replaced, brake pad check & air filter cleaning.');
+  const [cost, setCost] = useState<number>(0);
+  const [mechanicShop, setMechanicShop] = useState('');
+  const [notes, setNotes] = useState('');
 
   // Modal State for Adding New Bus to Fleet
   const [isAddBusModalOpen, setIsAddBusModalOpen] = useState(false);
-  const [newRegNumber, setNewRegNumber] = useState('KA 01 FA ' + Math.floor(1000 + Math.random() * 9000));
-  const [newModel, setNewModel] = useState('Ashok Leyland Viking 52s');
-  const [newCapacity, setNewCapacity] = useState<number>(52);
-  const [newRoute, setNewRoute] = useState('Bengaluru → Mysuru Express');
-  const [newDriverName, setNewDriverName] = useState('Prakash Rao');
+  const [newRegNumber, setNewRegNumber] = useState('');
+  const [newModel, setNewModel] = useState('');
+  const [newCapacity, setNewCapacity] = useState<number>(50);
+  const [newRoute, setNewRoute] = useState('');
+  const [newDriverName, setNewDriverName] = useState('');
   const [newOnTime, setNewOnTime] = useState<number>(95);
   const [newFuelScore, setNewFuelScore] = useState<number>(90);
-  const [newIncentiveCredit, setNewIncentiveCredit] = useState<number>(2000);
-  const [newNextServiceDue, setNewNextServiceDue] = useState('2026-11-15');
+  const [newIncentiveCredit, setNewIncentiveCredit] = useState<number>(0);
+  const [newNextServiceDue, setNewNextServiceDue] = useState('');
 
   // Lock body scroll when any modal is open
   useEffect(() => {
@@ -216,13 +216,13 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
         <div>
           <div className="flex items-center space-x-2 text-xs font-mono uppercase tracking-widest mb-1 text-slate-500 dark:text-slate-400">
             <Wrench className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-            <span>Vehicle Health & Maintenance Audit</span>
+            <span>Fleet</span>
           </div>
           <h2 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
-            Fleet Vehicles & Service Schedules
+            Fleet & Maintenance
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 font-sans mt-0.5">
-            Service status badges are dynamically calculated from service due dates. Update logs to sync vehicle health in Firestore.
+            Vehicle maintenance logs and service schedules.
           </p>
         </div>
 
@@ -261,7 +261,7 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
           <button
             onClick={handleExportCSV}
             className="px-3 py-1.5 border border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-xs font-mono font-bold uppercase rounded-lg transition-colors flex items-center space-x-1.5 cursor-pointer shadow-2xs"
-            title="Export Fleet and Maintenance records as CSV"
+            title="Export records as CSV"
           >
             <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             <span>CSV</span>
@@ -270,7 +270,7 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
           <button
             onClick={() => setIsReportsModalOpen(true)}
             className="px-3 py-1.5 border border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-xs font-mono font-bold uppercase rounded-lg transition-colors flex items-center space-x-1.5 cursor-pointer shadow-2xs"
-            title="Generate and download maintenance records PDF report"
+            title="Export PDF Report"
           >
             <Download className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
             <span>PDF</span>
@@ -293,7 +293,7 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
             Registered Vehicles ({filteredBuses.length})
           </span>
           <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
-            Dynamic Badge Engine Active
+            Updated live
           </span>
         </div>
 
@@ -553,7 +553,7 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
               </div>
 
               <div className="p-3 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-lg text-xs text-slate-600 dark:text-slate-400">
-                Submitting this log will update <strong>{selectedBus.regNumber}</strong>'s Next Due Date to <strong>{nextDueDate}</strong> and instantly recalculate its status badge in Firestore.
+                Next service due will update to <strong>{nextDueDate}</strong> for {selectedBus.regNumber}.
               </div>
 
               <div className="flex justify-end space-x-2 pt-3 border-t border-slate-200 dark:border-slate-800">
@@ -569,7 +569,7 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
                   className="px-4 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-amber-500 dark:hover:bg-amber-400 text-white dark:text-slate-950 text-xs font-mono uppercase font-bold rounded-lg flex items-center space-x-1 cursor-pointer shadow-xs"
                 >
                   <Check className="w-4 h-4" />
-                  <span>Update Firestore Log</span>
+                  <span>Save Log</span>
                 </button>
               </div>
             </form>
@@ -586,10 +586,10 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
               <div>
                 <div className="flex items-center space-x-2 text-xs font-mono text-amber-400 uppercase tracking-widest">
                   <BusIcon className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Fleet Vehicle Enrollment</span>
+                  <span>Fleet</span>
                 </div>
                 <h3 className="text-base sm:text-lg font-extrabold tracking-tight mt-0.5">
-                  Enroll New Bus into Active Fleet
+                  Add Bus to Fleet
                 </h3>
               </div>
               <button
@@ -763,7 +763,7 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
                   className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-amber-500 dark:hover:bg-amber-400 text-white dark:text-slate-950 text-xs font-mono uppercase font-bold tracking-wider rounded-lg transition-colors flex items-center space-x-2 cursor-pointer shadow-xs"
                 >
                   <Plus className="w-4 h-4 text-amber-400 dark:text-slate-950" />
-                  <span>Enroll Bus & Sync Fleet</span>
+                  <span>Add Bus</span>
                 </button>
               </div>
             </form>

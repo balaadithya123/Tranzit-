@@ -1,8 +1,10 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
-import { OwnerProfile, Bus, Driver, RouteItem } from './types';
-import { seedInitialFirestoreData } from './lib/seedData';
-import { doc, onSnapshot, getDoc, collection, query, where } from 'firebase/firestore';
-import { db } from './lib/firebase';
+import { OwnerProfile, Bus, Driver, RouteItem, PlanType } from './types';
+import { seedUserData } from './lib/seedData';
+import { getSavedLocalOwner, saveLocalOwner } from './lib/firebaseAuthHelper';
+import { doc, onSnapshot, getDoc, setDoc, collection, query, where } from 'firebase/firestore';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { db, auth } from './lib/firebase';
 import { AuthView } from './components/AuthView';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
@@ -12,6 +14,7 @@ import { CommandPalette } from './components/CommandPalette';
 import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { getServiceStatus, getLicenseValidityInfo } from './lib/utils';
+import { formatEmailToName, DEMO_SaaS_EMAIL, DEMO_LEASE_EMAIL } from './lib/seedData';
 import { RefreshCw } from 'lucide-react';
 
 // Code-split main view components with React.lazy
@@ -22,6 +25,7 @@ const LeaseTermsPayoutsView = lazy(() => import('./components/LeaseTermsPayoutsV
 const FleetMaintenanceView = lazy(() => import('./components/FleetMaintenanceView').then(m => ({ default: m.FleetMaintenanceView })));
 const FuelPerksView = lazy(() => import('./components/FuelPerksView').then(m => ({ default: m.FuelPerksView })));
 const DriversView = lazy(() => import('./components/DriversView').then(m => ({ default: m.DriversView })));
+const SettingsView = lazy(() => import('./components/SettingsView').then(m => ({ default: m.SettingsView })));
 
 function MainApp() {
   const [currentOwner, setCurrentOwner] = useState<OwnerProfile | null>(null);
@@ -40,18 +44,120 @@ function MainApp() {
 
   const { toggleTheme } = useTheme();
 
-  // Initialize and seed Firestore demo accounts on first mount
+  // Listen for Firebase Auth state changes and restore owner session
   useEffect(() => {
-    async function initApp() {
-      try {
-        await seedInitialFirestoreData();
-      } catch (err) {
-        console.error("Initialization error:", err);
-      } finally {
-        setInitializing(false);
-      }
+    // 1. Check local session storage first for immediate responsive hydration
+    const cachedOwner = getSavedLocalOwner();
+    if (cachedOwner) {
+      setCurrentOwner(cachedOwner);
     }
-    initApp();
+
+    // Safety timer to prevent any indefinite splash screen hanging
+    const safetyTimer = setTimeout(() => {
+      setInitializing(false);
+    }, 1500);
+
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          // Fast fetch with timeout
+          let ownerDoc: any = null;
+          try {
+            ownerDoc = await Promise.race([
+              getDoc(doc(db, 'owners', user.uid)),
+              new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000))
+            ]);
+          } catch (fetchErr) {
+            console.warn("Fast getDoc timeout or notice:", fetchErr);
+          }
+
+          if (ownerDoc && ownerDoc.exists()) {
+            const rawData = ownerDoc.data() as OwnerProfile;
+            const userEmail = (user.email || '').toLowerCase();
+            const isDemo = userEmail === DEMO_SaaS_EMAIL.toLowerCase() || userEmail === DEMO_LEASE_EMAIL.toLowerCase();
+            const hasDemoName = rawData.name === "Rajesh Sharma" || rawData.name === "Vikramaditya Verma" || rawData.name === "Fleet Owner";
+            
+            let profile: OwnerProfile = {
+              ...rawData,
+              id: user.uid,
+              uid: user.uid,
+              email: userEmail || rawData.email
+            };
+
+            if (!isDemo && (hasDemoName || user.displayName)) {
+              const properName = user.displayName || formatEmailToName(userEmail);
+              profile = {
+                ...profile,
+                name: properName,
+                companyName: user.displayName ? `${user.displayName} Travels` : `${properName} Logistics`
+              };
+              try {
+                await setDoc(doc(db, 'owners', user.uid), profile, { merge: true });
+              } catch (saveErr) {
+                console.warn("Notice updating owner document:", saveErr);
+              }
+            }
+
+            setCurrentOwner(profile);
+            saveLocalOwner(profile);
+          } else {
+            // Document does not exist in Firestore yet (e.g. brand-new Google Sign-In)
+            // DO NOT sign out! Check local cache or create initial empty owner profile
+            const cached = getSavedLocalOwner();
+            if (cached && cached.id === user.uid) {
+              setCurrentOwner(cached);
+            } else {
+              const userEmail = (user.email || '').toLowerCase();
+              const properName = user.displayName || formatEmailToName(userEmail);
+              const newProfile: OwnerProfile = {
+                id: user.uid,
+                uid: user.uid,
+                name: properName,
+                email: userEmail,
+                companyName: user.displayName ? `${user.displayName} Travels` : `${properName} Logistics`,
+                planType: 'SaaS',
+                city: "Bengaluru",
+                phone: "+91 98000 00000",
+                activeBusesCount: 0,
+                todayRevenue: 0,
+                walletBalance: 0,
+                saasFeePerBus: 4500,
+                nextPayoutDate: "",
+                nextPayoutAmount: 0,
+                avgDailyRiders: 0,
+                createdAt: new Date().toISOString()
+              };
+              setCurrentOwner(newProfile);
+              saveLocalOwner(newProfile);
+              setDoc(doc(db, 'owners', user.uid), newProfile, { merge: true }).catch(err => {
+                console.warn("Notice initializing owner profile in background:", err);
+              });
+            }
+          }
+        } catch (err) {
+          console.warn("Owner session retrieval notice:", err);
+          const cached = getSavedLocalOwner();
+          if (cached && cached.id === user.uid) {
+            setCurrentOwner(cached);
+          }
+        }
+      } else {
+        const cached = getSavedLocalOwner();
+        if (cached?.id) {
+          // If user logged out explicitly or session is empty
+          setCurrentOwner(cached);
+        } else {
+          saveLocalOwner(null);
+          setCurrentOwner(null);
+        }
+      }
+      setInitializing(false);
+    });
+
+    return () => {
+      clearTimeout(safetyTimer);
+      unsubscribe();
+    };
   }, []);
 
   // Global Keyboard Shortcuts (Friction Reduction Engine)
@@ -125,7 +231,7 @@ function MainApp() {
             break;
           case '7':
             e.preventDefault();
-            setIsReportsModalOpen(true);
+            setActiveTab('settings');
             break;
           default:
             break;
@@ -144,6 +250,14 @@ function MainApp() {
     const unsubOwner = onSnapshot(doc(db, 'owners', currentOwner.id), (snapshot) => {
       if (snapshot.exists()) {
         setCurrentOwner(snapshot.data() as OwnerProfile);
+      } else {
+        // Document was deleted from Firestore
+        saveLocalOwner(null);
+        try {
+          localStorage.clear();
+          sessionStorage.clear();
+        } catch (e) {}
+        setCurrentOwner(null);
       }
     });
 
@@ -178,28 +292,32 @@ function MainApp() {
 
   const handleLoginSuccess = (owner: OwnerProfile) => {
     setCurrentOwner(owner);
+    saveLocalOwner(owner);
     setActiveTab('overview');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.warn("Sign out notice:", err);
+    }
+    saveLocalOwner(null);
+    try {
+      localStorage.clear();
+      sessionStorage.clear();
+    } catch (e) {}
     setCurrentOwner(null);
   };
 
-  const handleSwitchOwner = async (ownerId: string) => {
+  const handleAccountDeleted = () => {
+    saveLocalOwner(null);
     try {
-      const ownerDoc = await getDoc(doc(db, 'owners', ownerId));
-      if (ownerDoc.exists()) {
-        const newOwner = ownerDoc.data() as OwnerProfile;
-        setCurrentOwner(newOwner);
-        if (newOwner.planType === 'Lease' && (activeTab === 'fares' || activeTab === 'earnings')) {
-          setActiveTab('overview');
-        } else if (newOwner.planType === 'SaaS' && activeTab === 'lease') {
-          setActiveTab('overview');
-        }
-      }
-    } catch (err) {
-      console.error("Error switching profile:", err);
-    }
+      localStorage.clear();
+      sessionStorage.clear();
+    } catch (e) {}
+    setCurrentOwner(null);
+    setActiveTab('overview');
   };
 
   if (initializing) {
@@ -259,7 +377,8 @@ function MainApp() {
           onOpenReportsModal={() => setIsReportsModalOpen(true)}
           onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
           onOpenShortcutsModal={() => setIsShortcutsOpen(true)}
-          onSwitchOwner={handleSwitchOwner}
+          onLogout={handleLogout}
+          onNavigateTab={setActiveTab}
         />
 
         {/* Tab Module Canvas */}
@@ -301,6 +420,14 @@ function MainApp() {
             {activeTab === 'fuel-perks' && (
               <FuelPerksView owner={currentOwner} />
             )}
+
+            {activeTab === 'settings' && (
+              <SettingsView 
+                owner={currentOwner} 
+                onAccountDeleted={handleAccountDeleted}
+                onOpenReportsModal={() => setIsReportsModalOpen(true)}
+              />
+            )}
           </Suspense>
         </main>
 
@@ -330,6 +457,14 @@ function MainApp() {
           owner={currentOwner}
           isOpen={isEditProfileOpen}
           onClose={() => setIsEditProfileOpen(false)}
+          onAccountDeleted={() => {
+            saveLocalOwner(null);
+            try {
+              localStorage.clear();
+              sessionStorage.clear();
+            } catch (e) {}
+            setCurrentOwner(null);
+          }}
         />
       )}
 
@@ -351,7 +486,6 @@ function MainApp() {
           drivers={drivers}
           routes={routes}
           onNavigateTab={setActiveTab}
-          onSwitchOwner={handleSwitchOwner}
           onOpenReportsModal={() => {
             setIsCommandPaletteOpen(false);
             setIsReportsModalOpen(true);

@@ -95,10 +95,10 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
   }, [owner.id]);
 
   // Derived Fleet Metrics
-  const totalBusesCount = buses.length > 0 ? buses.length : (owner.activeBusesCount || 3);
+  const totalBusesCount = buses.length > 0 ? buses.length : (owner.activeBusesCount ?? 0);
   const activeBusesCount = buses.length > 0 
     ? buses.filter(b => b.status === 'Active').length 
-    : (owner.activeBusesCount || 3);
+    : (owner.activeBusesCount ?? 0);
 
   // Maintenance Alerts
   const overdueBuses = buses.filter(b => getServiceStatus(b.nextServiceDue) === 'Overdue');
@@ -131,11 +131,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
     String(r.distanceKm).includes(routeSearch)
   );
 
-  const displayRoutes = filteredRoutes.length > 0 ? filteredRoutes : (routes.length > 0 ? routes : [
-    { id: '1', routeName: `${currentHub} – Mysuru Express`, distanceKm: 145, fixedCharge: 80, ratePerKm: 2.2, computedFare: 399, tripsPerDay: 8, ownerId: owner.id },
-    { id: '2', routeName: `${currentHub} – Hosur Sector Line`, distanceKm: 42, fixedCharge: 40, ratePerKm: 2.0, computedFare: 124, tripsPerDay: 12, ownerId: owner.id },
-    { id: '3', routeName: `${currentHub} – Tumakuru Industrial`, distanceKm: 70, fixedCharge: 50, ratePerKm: 2.1, computedFare: 197, tripsPerDay: 6, ownerId: owner.id }
-  ]);
+  const displayRoutes = filteredRoutes;
 
   const todayDateStr = new Date('2026-09-17').toLocaleDateString('en-IN', {
     weekday: 'short',
@@ -150,13 +146,9 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
       <div className="bg-white dark:bg-[#121214] border border-slate-200 dark:border-neutral-800 p-5 sm:p-6 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs transition-colors">
         <div>
           <div className="flex items-center space-x-2 text-xs font-mono text-slate-500 dark:text-neutral-400 uppercase tracking-widest mb-1.5">
-            <span className="font-bold text-slate-900 dark:text-neutral-100">Mission Control</span>
+            <span className="font-bold text-slate-900 dark:text-neutral-100">Overview</span>
             <span>•</span>
             <span>{todayDateStr}</span>
-            <span>•</span>
-            <span className={isSaaS ? 'text-amber-700 dark:text-amber-400 font-bold' : 'text-teal-700 dark:text-teal-400 font-bold'}>
-              {owner.planType} Fleet Tier
-            </span>
           </div>
 
           <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-neutral-100 tracking-tight font-sans">
@@ -166,7 +158,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
           <div className="flex flex-wrap items-center gap-2 mt-2.5 text-xs text-slate-600 dark:text-neutral-400">
             <div className="inline-flex items-center space-x-1.5 bg-slate-50 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 px-2.5 py-1 rounded-lg font-mono">
               <MapPin className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-              <span>Base Hub: <strong className="text-slate-900 dark:text-neutral-100">{currentHub}</strong></span>
+              <span>Hub: <strong className="text-slate-900 dark:text-neutral-100">{currentHub}</strong></span>
               <button
                 onClick={() => setIsEditModalOpen(true)}
                 className="text-slate-400 hover:text-slate-900 dark:hover:text-neutral-100 ml-1 cursor-pointer"
@@ -178,12 +170,12 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
 
             <div className="inline-flex items-center space-x-1.5 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-500/20 px-2.5 py-1 rounded-lg font-mono text-[11px]">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>{activeBusesCount} of {totalBusesCount} Vehicles Dispatched</span>
+              <span>{activeBusesCount}/{totalBusesCount} active buses</span>
             </div>
 
             <div className="inline-flex items-center space-x-1.5 bg-slate-100 dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 border border-slate-200 dark:border-neutral-800 px-2.5 py-1 rounded-lg font-mono text-[11px]">
               <UserCheck className="w-3 h-3 text-slate-500 dark:text-neutral-400" />
-              <span>{drivers.length} Certified Pilots Enrolled</span>
+              <span>{drivers.length} Drivers</span>
             </div>
           </div>
         </div>
@@ -195,7 +187,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
             title="Download Monthly Operations PDF Report"
           >
             <Download className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
-            <span>Export Reports (PDF)</span>
+            <span>Export PDF</span>
           </button>
         </div>
       </div>
@@ -216,16 +208,16 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
                 <span className={`px-2 py-0.5 font-mono text-[10px] font-bold rounded uppercase border ${
                   isSaaS ? 'bg-amber-100 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 border-amber-300 dark:border-amber-700' : 'bg-teal-100 dark:bg-teal-900/60 text-teal-900 dark:text-teal-200 border-teal-300 dark:border-teal-700'
                 }`}>
-                  {isSaaS ? 'SaaS Subscription Renewal' : 'Lease Payout Scheduled'}
+                  {isSaaS ? 'Renewal' : 'Payout Scheduled'}
                 </span>
                 <span className="font-mono text-xs font-bold">
-                  {daysUntilPayout === 0 ? 'Due Today' : `In ${daysUntilPayout} day${daysUntilPayout > 1 ? 's' : ''}`} ({owner.nextPayoutDate})
+                  {daysUntilPayout === 0 ? 'Due Today' : `In ${daysUntilPayout}d`} ({owner.nextPayoutDate})
                 </span>
               </div>
               <p className="text-xs mt-1 leading-relaxed">
                 {isSaaS 
-                  ? `Your monthly platform subscription fee of ${formatINR(totalMonthlySaasFee)} (${totalBusesCount} buses × ₹${saasFeePerBus.toLocaleString('en-IN')}) is due on ${owner.nextPayoutDate}.`
-                  : `Your guaranteed monthly lease payout of ${formatINR(owner.nextPayoutAmount || 255000)} is scheduled for bank transfer on ${owner.nextPayoutDate}.`
+                  ? `Monthly subscription fee: ${formatINR(totalMonthlySaasFee)} (${totalBusesCount} buses × ₹${saasFeePerBus.toLocaleString('en-IN')}) due on ${owner.nextPayoutDate || 'Not scheduled yet'}.`
+                  : `Guaranteed lease payout: ${formatINR(owner.nextPayoutAmount || 0)} on ${owner.nextPayoutDate || 'Not scheduled yet'}.`
                 }
               </p>
             </div>
@@ -238,7 +230,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
                 : 'bg-teal-900 dark:bg-teal-600 hover:bg-slate-900 text-white'
             }`}
           >
-            <span>{isSaaS ? 'View SaaS Billing' : 'View Payout Terms'}</span>
+            <span>{isSaaS ? 'View Earnings' : 'View Lease'}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -248,11 +240,11 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Metric 1: Fleet Scale */}
         <StatCard
-          label="Fleet Deployment"
+          label="Active Buses"
           value={`${activeBusesCount} / ${totalBusesCount}`}
-          subtext={`${Math.round((activeBusesCount / (totalBusesCount || 1)) * 100)}% active`}
+          subtext={totalBusesCount === 0 ? "No buses enrolled" : `${Math.round((activeBusesCount / totalBusesCount) * 100)}% in service`}
           icon={BusIcon}
-          badgeText={totalMaintenanceAlerts > 0 ? `${totalMaintenanceAlerts} alert` : "Ready"}
+          badgeText={totalMaintenanceAlerts > 0 ? `${totalMaintenanceAlerts} alert` : totalBusesCount === 0 ? "No Fleet" : "Ready"}
           accentColor="amber"
         />
 
@@ -260,19 +252,19 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
         {isSaaS ? (
           <StatCard
             label="Today's Collections"
-            value={formatINR(owner.todayRevenue || 48250)}
-            subtext="Across scheduled runs"
+            value={formatINR(owner.todayRevenue || 0)}
+            subtext={owner.todayRevenue ? "Active routes" : "No collections yet"}
             icon={TrendingUp}
-            badgeText="+12.4% surge"
+            badgeText={owner.todayRevenue ? "+12.4%" : "₹0"}
             accentColor="amber"
           />
         ) : (
           <StatCard
-            label="Guaranteed Monthly Lease"
-            value={formatINR(owner.nextPayoutAmount || 255000)}
-            subtext={`Fixed on ${totalBusesCount} buses`}
+            label="Monthly Lease"
+            value={formatINR(owner.nextPayoutAmount || 0)}
+            subtext={`Fixed (${totalBusesCount} buses)`}
             icon={Wallet}
-            badgeText="Guaranteed"
+            badgeText={owner.nextPayoutAmount ? "Guaranteed" : "Fixed"}
             accentColor="teal"
           />
         )}
@@ -280,31 +272,31 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
         {/* Metric 3: Commercial Balance / Payout */}
         {isSaaS ? (
           <StatCard
-            label="Net Owner Wallet"
-            value={formatINR(owner.walletBalance || 185400)}
-            subtext={`Payout: ${owner.nextPayoutDate || '5 days'}`}
+            label="Wallet Balance"
+            value={formatINR(owner.walletBalance || 0)}
+            subtext={owner.nextPayoutDate ? `Payout: ${owner.nextPayoutDate}` : 'Not scheduled yet'}
             icon={Wallet}
-            badgeText="Available"
+            badgeText={owner.walletBalance ? "Available" : "₹0"}
             accentColor="amber"
           />
         ) : (
           <StatCard
-            label="Lease Payout Date"
-            value={owner.nextPayoutDate || '2026-10-01'}
-            subtext={daysUntilPayout !== null ? `Transfer in ${daysUntilPayout} days` : 'Depot bank transfer'}
+            label="Payout Date"
+            value={owner.nextPayoutDate || 'Not scheduled yet'}
+            subtext={daysUntilPayout !== null ? `In ${daysUntilPayout} days` : 'Not scheduled yet'}
             icon={Calendar}
-            badgeText="Fixed Date"
+            badgeText={owner.nextPayoutDate ? "Fixed" : "Pending"}
             accentColor="teal"
           />
         )}
 
         {/* Metric 4: Passenger Footfall */}
         <StatCard
-          label="Daily Passenger Volume"
-          value={(owner.avgDailyRiders || 1240).toLocaleString('en-IN')}
-          subtext="Riders serviced daily"
+          label="Daily Riders"
+          value={(owner.avgDailyRiders || 0).toLocaleString('en-IN')}
+          subtext={owner.avgDailyRiders ? "Passenger volume" : "No riders logged"}
           icon={Users}
-          badgeText="+8.2% riders"
+          badgeText={owner.avgDailyRiders ? "+8.2%" : "0"}
           accentColor="amber"
         />
       </div>
@@ -319,19 +311,19 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
                 : 'text-emerald-600 dark:text-emerald-400'
             }`} />
             <h3 className="text-xs font-mono font-extrabold uppercase text-slate-900 dark:text-neutral-100 tracking-wider">
-              Fleet Radar & Compliance Center
+              Fleet Alerts
             </h3>
           </div>
           <span className="text-[11px] font-mono text-slate-500 dark:text-neutral-400">
-            {totalMaintenanceAlerts + urgentDrivers.length + (isUpcomingPayoutOrRenewal ? 1 : 0)} Active Items
+            {totalMaintenanceAlerts + urgentDrivers.length + (isUpcomingPayoutOrRenewal ? 1 : 0)} Active
           </span>
         </div>
 
         {totalMaintenanceAlerts === 0 && urgentDrivers.length === 0 && !isUpcomingPayoutOrRenewal ? (
-          <div className="py-6 flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-3 text-emerald-700 dark:text-emerald-400">
+          <div className="py-6 flex items-center justify-center space-x-2 text-emerald-700 dark:text-emerald-400">
             <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
             <span className="text-xs font-mono font-bold">
-              All systems nominal: zero overdue maintenance, all driver licenses compliant, payouts on schedule.
+              All clear — nothing needs attention
             </span>
           </div>
         ) : (
@@ -341,7 +333,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
               <div key={bus.id} className="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
                 <div className="flex items-center space-x-2.5">
                   <span className="px-1.5 py-0.5 bg-red-500/10 text-red-700 dark:text-red-400 border border-red-500/20 font-mono text-[10px] font-bold rounded uppercase">
-                    Overdue Service
+                    Overdue
                   </span>
                   <span className="font-mono font-bold text-slate-900 dark:text-neutral-100">{bus.regNumber}</span>
                   <CopyButton textToCopy={bus.regNumber} label={bus.regNumber} />
@@ -352,7 +344,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
                   onClick={() => onNavigateTab('fleet')}
                   className="inline-flex items-center space-x-1 text-xs font-mono font-bold text-amber-700 dark:text-amber-400 hover:underline cursor-pointer"
                 >
-                  <span>Log Service in Fleet Module</span>
+                  <span>Log Service</span>
                   <ArrowRight className="w-3 h-3" />
                 </button>
               </div>
@@ -363,7 +355,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
               <div key={bus.id} className="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
                 <div className="flex items-center space-x-2.5">
                   <span className="px-1.5 py-0.5 bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/20 font-mono text-[10px] font-bold rounded uppercase">
-                    Service Due Soon
+                    Due Soon
                   </span>
                   <span className="font-mono font-bold text-slate-900 dark:text-neutral-100">{bus.regNumber}</span>
                   <CopyButton textToCopy={bus.regNumber} label={bus.regNumber} />
@@ -374,7 +366,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
                   onClick={() => onNavigateTab('fleet')}
                   className="inline-flex items-center space-x-1 text-xs font-mono font-bold text-slate-700 dark:text-neutral-300 hover:text-slate-900 dark:hover:text-white hover:underline cursor-pointer"
                 >
-                  <span>Schedule Maintenance</span>
+                  <span>Log Service</span>
                   <ArrowRight className="w-3 h-3" />
                 </button>
               </div>
@@ -391,7 +383,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
                         ? 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20'
                         : 'bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/20'
                     }`}>
-                      {validity.status === 'Expired' ? 'License Expired' : 'Renewal Due'}
+                      {validity.status === 'Expired' ? 'Expired' : 'Renewal Due'}
                     </span>
                     <span className="font-bold text-slate-900 dark:text-neutral-100">{driver.name}</span>
                     <span className="font-mono text-slate-500 dark:text-neutral-400">DL: {driver.licenseNumber}</span>
@@ -402,7 +394,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
                     onClick={() => onNavigateTab('drivers')}
                     className="inline-flex items-center space-x-1 text-xs font-mono font-bold text-amber-700 dark:text-amber-400 hover:underline cursor-pointer"
                   >
-                    <span>Update DL in Driver Roster</span>
+                    <span>Update License</span>
                     <ArrowRight className="w-3 h-3" />
                   </button>
                 </div>
@@ -416,10 +408,10 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
                   <span className={`px-1.5 py-0.5 font-mono text-[10px] font-bold rounded uppercase border ${
                     isSaaS ? 'bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/20' : 'bg-teal-500/10 text-teal-800 dark:text-teal-300 border-teal-500/20'
                   }`}>
-                    {isSaaS ? 'SaaS Renewal' : 'Lease Payout'}
+                    {isSaaS ? 'Renewal' : 'Payout'}
                   </span>
                   <span className="font-bold text-slate-900 dark:text-neutral-100">
-                    {isSaaS ? `Monthly Subscription (${formatINR(totalMonthlySaasFee)})` : `Monthly Payout (${formatINR(owner.nextPayoutAmount || 255000)})`}
+                    {isSaaS ? `Monthly Subscription (${formatINR(totalMonthlySaasFee)})` : `Monthly Payout (${formatINR(owner.nextPayoutAmount || 0)})`}
                   </span>
                   <span className="text-slate-400 dark:text-neutral-500">
                     • {daysUntilPayout === 0 ? 'Due Today' : `Due in ${daysUntilPayout}d`} ({owner.nextPayoutDate})
@@ -429,7 +421,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
                   onClick={() => onNavigateTab(isSaaS ? 'earnings' : 'lease')}
                   className="inline-flex items-center space-x-1 text-xs font-mono font-bold text-amber-700 dark:text-amber-400 hover:underline cursor-pointer"
                 >
-                  <span>{isSaaS ? 'Review SaaS Billing' : 'Review Payout Details'}</span>
+                  <span>{isSaaS ? 'View Earnings' : 'View Lease'}</span>
                   <ArrowRight className="w-3 h-3" />
                 </button>
               </div>
@@ -454,6 +446,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
         totalBusesCount={totalBusesCount}
         activeBusesCount={activeBusesCount}
         planType={owner.planType}
+        onNavigateTab={onNavigateTab}
       />
 
       {/* 6. Split Operational Intelligence: Hub Schedules & Plan Economics */}
@@ -465,7 +458,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
               <div className="flex items-center space-x-2">
                 <Compass className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                 <h3 className="text-xs font-mono font-extrabold uppercase text-slate-900 dark:text-neutral-100 tracking-wider">
-                  {currentHub} Hub Route Network
+                  Routes ({currentHub})
                 </h3>
               </div>
 
@@ -482,45 +475,64 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
               </div>
             </div>
 
-            <div className="space-y-2.5">
-              {displayRoutes.slice(0, 4).map((route) => (
-                <div
-                  key={route.id}
-                  className="p-3 bg-slate-50 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 rounded-lg flex items-center justify-between gap-3 text-xs"
+            {routes.length === 0 ? (
+              <div className="py-8 px-4 text-center border border-dashed border-slate-200 dark:border-neutral-800 rounded-lg">
+                <Compass className="w-8 h-8 text-slate-300 dark:text-neutral-700 mx-auto mb-2" />
+                <p className="text-xs text-slate-500 dark:text-neutral-400 font-mono">
+                  No routes found. Click &apos;Add New Route&apos; to configure your first route.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => onNavigateTab(isSaaS ? 'fares' : 'drivers')}
+                  className="mt-3 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-amber-500 dark:hover:bg-amber-400 text-white dark:text-slate-950 text-xs font-mono font-bold rounded-lg transition-colors cursor-pointer"
                 >
-                  <div>
-                    <div className="font-bold text-slate-900 dark:text-neutral-100 font-sans flex items-center space-x-2">
-                      <span>{route.routeName}</span>
-                      <CopyButton textToCopy={route.routeName} label={route.routeName} />
-                      <span className="text-[10px] font-mono font-semibold px-1.5 py-0.2 bg-slate-200/60 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 rounded border border-slate-300/40 dark:border-neutral-700">
-                        {route.distanceKm} km
-                      </span>
+                  Add New Route
+                </button>
+              </div>
+            ) : displayRoutes.length === 0 ? (
+              <div className="py-8 px-4 text-center border border-dashed border-slate-200 dark:border-neutral-800 rounded-lg">
+                <p className="text-xs text-slate-500 dark:text-neutral-400 font-mono">
+                  No routes matching &quot;{routeSearch}&quot;
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {displayRoutes.slice(0, 4).map((route) => (
+                  <div
+                    key={route.id}
+                    className="p-3 bg-slate-50 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 rounded-lg flex items-center justify-between gap-3 text-xs"
+                  >
+                    <div>
+                      <div className="font-bold text-slate-900 dark:text-neutral-100 font-sans flex items-center space-x-2">
+                        <span>{route.routeName}</span>
+                        <CopyButton textToCopy={route.routeName} label={route.routeName} />
+                        <span className="text-[10px] font-mono font-semibold px-1.5 py-0.2 bg-slate-200/60 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 rounded border border-slate-300/40 dark:border-neutral-700">
+                          {route.distanceKm} km
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-slate-500 dark:text-neutral-400 font-mono mt-0.5">
+                        {route.tripsPerDay} trips/day • ₹{route.fixedCharge} + ₹{route.ratePerKm}/km
+                      </div>
                     </div>
-                    <div className="text-[11px] text-slate-500 dark:text-neutral-400 font-mono mt-0.5">
-                      {route.tripsPerDay} trips/day • Base ₹{route.fixedCharge} + ₹{route.ratePerKm}/km
-                    </div>
-                  </div>
 
-                  <div className="text-right flex flex-col items-end">
-                    <span className="font-mono font-bold text-sm text-slate-900 dark:text-neutral-100">
-                      {formatINR(route.computedFare)}
-                    </span>
-                    <span className="text-[10px] text-slate-400 dark:text-neutral-500 font-mono">per ticket</span>
+                    <div className="text-right flex flex-col items-end">
+                      <span className="font-mono font-bold text-sm text-slate-900 dark:text-neutral-100">
+                        {formatINR(route.computedFare)}
+                      </span>
+                      <span className="text-[10px] text-slate-400 dark:text-neutral-500 font-mono">fare</span>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-200 dark:border-neutral-800 flex items-center justify-between">
-            <span className="text-[11px] font-mono text-slate-500 dark:text-neutral-400">
-              Terminal: {currentHub} Central Bus Depot
-            </span>
+          <div className="mt-4 pt-3 border-t border-slate-200 dark:border-neutral-800 flex items-center justify-end">
             <button
               onClick={() => onNavigateTab(isSaaS ? 'fares' : 'drivers')}
               className="inline-flex items-center space-x-1 text-xs font-mono font-bold text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-300 uppercase cursor-pointer"
             >
-              <span>{isSaaS ? 'Manage Routes & Dynamic Fares' : 'Dispatch Driver Roster'}</span>
+              <span>{isSaaS ? 'Manage Routes' : 'View Drivers'}</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -533,44 +545,37 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
               <div className="flex items-center space-x-2">
                 <Wallet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 <h3 className="text-xs font-mono font-extrabold uppercase text-slate-900 dark:text-neutral-100 tracking-wider">
-                  Commercials & Settlement
+                  Commercials
                 </h3>
               </div>
-              <span className={`text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded border ${
-                isSaaS 
-                  ? 'bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/20' 
-                  : 'bg-teal-500/10 text-teal-800 dark:text-teal-300 border-teal-500/20'
-              }`}>
-                {owner.planType} Active
-              </span>
             </div>
 
             {isSaaS ? (
               <div className="space-y-3 text-xs">
                 <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
                   <div className="text-[10px] font-mono uppercase font-bold text-amber-800 dark:text-amber-300">
-                    Flat Software Subscription
+                    Monthly Fee
                   </div>
                   <div className="text-lg font-mono font-bold text-slate-900 dark:text-neutral-100 mt-0.5">
                     {formatINR(totalMonthlySaasFee)} / month
                   </div>
                   <p className="text-[11px] text-amber-900/80 dark:text-amber-300/80 font-mono mt-1 leading-tight">
-                    Calculated as ₹{saasFeePerBus.toLocaleString('en-IN')}/bus × {totalBusesCount} registered buses. No commission on ticket sales.
+                    ₹{saasFeePerBus.toLocaleString('en-IN')} × {totalBusesCount} buses
                   </p>
                 </div>
 
                 <div className="p-3 bg-slate-50 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 rounded-lg space-y-1.5">
                   <div className="flex justify-between font-mono">
                     <span className="text-slate-500 dark:text-neutral-400">Collected Today:</span>
-                    <span className="font-bold text-slate-900 dark:text-neutral-100">{formatINR(owner.todayRevenue || 48250)}</span>
+                    <span className="font-bold text-slate-900 dark:text-neutral-100">{formatINR(owner.todayRevenue || 0)}</span>
                   </div>
                   <div className="flex justify-between font-mono">
-                    <span className="text-slate-500 dark:text-neutral-400">Running Wallet:</span>
-                    <span className="font-bold text-emerald-700 dark:text-emerald-400">{formatINR(owner.walletBalance || 185400)}</span>
+                    <span className="text-slate-500 dark:text-neutral-400">Wallet Balance:</span>
+                    <span className="font-bold text-emerald-700 dark:text-emerald-400">{formatINR(owner.walletBalance || 0)}</span>
                   </div>
                   <div className="flex justify-between font-mono pt-1 border-t border-slate-200 dark:border-neutral-800">
-                    <span className="text-slate-500 dark:text-neutral-400">Next Auto-Payout:</span>
-                    <span className="font-semibold text-slate-800 dark:text-neutral-200">{owner.nextPayoutDate || '5 days'}</span>
+                    <span className="text-slate-500 dark:text-neutral-400">Next Payout:</span>
+                    <span className="font-semibold text-slate-800 dark:text-neutral-200">{owner.nextPayoutDate || 'Not scheduled yet'}</span>
                   </div>
                 </div>
               </div>
@@ -578,28 +583,24 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
               <div className="space-y-3 text-xs">
                 <div className="p-3 bg-teal-500/10 border border-teal-500/20 rounded-lg">
                   <div className="text-[10px] font-mono uppercase font-bold text-teal-800 dark:text-teal-300">
-                    Monthly Lease Payout Guarantee
+                    Monthly Lease Payout
                   </div>
                   <div className="text-lg font-mono font-bold text-slate-900 dark:text-neutral-100 mt-0.5">
-                    {formatINR(owner.nextPayoutAmount || 255000)} / month
+                    {formatINR(owner.nextPayoutAmount || 0)} / month
                   </div>
                   <p className="text-[11px] text-teal-900/80 dark:text-teal-300/80 font-mono mt-1 leading-tight">
-                    Fixed monthly lease payout across your {totalBusesCount} contracted fleet vehicles.
+                    Fixed ({totalBusesCount} buses)
                   </p>
                 </div>
 
                 <div className="p-3 bg-slate-50 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 rounded-lg space-y-1.5">
                   <div className="flex justify-between font-mono">
-                    <span className="text-slate-500 dark:text-neutral-400">Next Payout Date:</span>
-                    <span className="font-bold text-slate-900 dark:text-neutral-100">{owner.nextPayoutDate || '2026-10-01'}</span>
+                    <span className="text-slate-500 dark:text-neutral-400">Next Payout:</span>
+                    <span className="font-bold text-slate-900 dark:text-neutral-100">{owner.nextPayoutDate || 'Not scheduled yet'}</span>
                   </div>
                   <div className="flex justify-between font-mono">
-                    <span className="text-slate-500 dark:text-neutral-400">Depot Operations:</span>
-                    <span className="font-semibold text-slate-700 dark:text-neutral-300">100% Tranzit Managed</span>
-                  </div>
-                  <div className="flex justify-between font-mono pt-1 border-t border-slate-200 dark:border-neutral-800">
-                    <span className="text-slate-500 dark:text-neutral-400">Market Occupancy Risk:</span>
-                    <span className="font-bold text-emerald-700 dark:text-emerald-400">Zero Risk (Fixed)</span>
+                    <span className="text-slate-500 dark:text-neutral-400">Operations:</span>
+                    <span className="font-semibold text-slate-700 dark:text-neutral-300">Managed by Tranzit</span>
                   </div>
                 </div>
               </div>
@@ -611,7 +612,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
               onClick={() => onNavigateTab(isSaaS ? 'earnings' : 'lease')}
               className="w-full py-2 bg-slate-900 hover:bg-slate-800 dark:bg-neutral-900 dark:hover:bg-neutral-800 text-white font-mono font-bold text-xs uppercase rounded-lg transition-colors text-center cursor-pointer border border-slate-700 dark:border-neutral-700"
             >
-              {isSaaS ? 'Open Revenue & Settlement Ledger' : 'View Lease Contract Terms'}
+              {isSaaS ? 'View Earnings' : 'View Lease'}
             </button>
           </div>
         </div>

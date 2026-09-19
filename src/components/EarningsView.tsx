@@ -20,24 +20,24 @@ export const EarningsView: React.FC<EarningsViewProps> = ({ owner }) => {
 
   // Settlement Edit Modal
   const [isSettlementModalOpen, setIsSettlementModalOpen] = useState(false);
-  const [editTodayRev, setEditTodayRev] = useState<number>(owner.todayRevenue || 48250);
-  const [editWalletBal, setEditWalletBal] = useState<number>(owner.walletBalance || 185400);
-  const [editNextPayoutDate, setEditNextPayoutDate] = useState<string>(owner.nextPayoutDate || '2026-09-20');
-  const [editNextPayoutAmount, setEditNextPayoutAmount] = useState<number>(owner.nextPayoutAmount || owner.walletBalance || 185400);
+  const [editTodayRev, setEditTodayRev] = useState<number>(owner.todayRevenue || 0);
+  const [editWalletBal, setEditWalletBal] = useState<number>(owner.walletBalance || 0);
+  const [editNextPayoutDate, setEditNextPayoutDate] = useState<string>(owner.nextPayoutDate || '');
+  const [editNextPayoutAmount, setEditNextPayoutAmount] = useState<number>(owner.nextPayoutAmount || 0);
 
   // New Earnings Log Modal State
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [logDate, setLogDate] = useState(new Date().toISOString().split('T')[0]);
-  const [cashVal, setCashVal] = useState<number>(14000);
-  const [upiVal, setUpiVal] = useState<number>(28500);
-  const [cardVal, setCardVal] = useState<number>(6000);
+  const [cashVal, setCashVal] = useState<number>(0);
+  const [upiVal, setUpiVal] = useState<number>(0);
+  const [cardVal, setCardVal] = useState<number>(0);
 
   // Keep modal state in sync with owner props when owner changes
   useEffect(() => {
-    setEditTodayRev(owner.todayRevenue || 48250);
-    setEditWalletBal(owner.walletBalance || 185400);
-    setEditNextPayoutDate(owner.nextPayoutDate || '2026-09-20');
-    setEditNextPayoutAmount(owner.nextPayoutAmount || owner.walletBalance || 185400);
+    setEditTodayRev(owner.todayRevenue || 0);
+    setEditWalletBal(owner.walletBalance || 0);
+    setEditNextPayoutDate(owner.nextPayoutDate || '');
+    setEditNextPayoutAmount(owner.nextPayoutAmount || 0);
   }, [owner]);
 
   // Subscribe to earnings in Firestore
@@ -169,7 +169,7 @@ export const EarningsView: React.FC<EarningsViewProps> = ({ owner }) => {
   };
 
   const handleRequestPayoutNow = async () => {
-    const currentBal = owner.walletBalance || 185400;
+    const currentBal = owner.walletBalance || 0;
     if (currentBal <= 0) return;
     
     await updateDoc(doc(db, 'owners', owner.id), {
@@ -187,13 +187,13 @@ export const EarningsView: React.FC<EarningsViewProps> = ({ owner }) => {
         <div>
           <div className="flex items-center space-x-2 text-xs font-mono text-amber-700 dark:text-amber-400 uppercase tracking-widest mb-1.5 font-bold">
             <Wallet className="w-3.5 h-3.5" />
-            <span>SaaS Financial & Settlement Models</span>
+            <span>Earnings</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-neutral-100 tracking-tight font-sans">
-            Revenue & Wallet Settlement
+            Revenue & Settlements
           </h2>
           <p className="text-xs text-slate-500 dark:text-neutral-400 font-sans mt-0.5">
-            Compare real daily ticket revenue collection versus running wallet escrow settlement. Both values sync live with Firestore.
+            Daily fare collections and wallet balance.
           </p>
         </div>
 
@@ -203,7 +203,7 @@ export const EarningsView: React.FC<EarningsViewProps> = ({ owner }) => {
             className="px-3.5 py-2 border border-amber-300 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-900/40 text-amber-950 dark:text-amber-200 text-xs font-mono uppercase font-bold rounded-lg flex items-center space-x-1.5 cursor-pointer shadow-2xs transition-colors"
           >
             <Download className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-            <span>Download Monthly Statement (PDF)</span>
+            <span>Export PDF</span>
           </button>
 
           <button
@@ -211,7 +211,7 @@ export const EarningsView: React.FC<EarningsViewProps> = ({ owner }) => {
             className="px-3.5 py-2 border border-slate-200 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900 hover:bg-white dark:hover:bg-neutral-800 text-slate-700 dark:text-neutral-300 text-xs font-mono uppercase font-bold rounded-lg flex items-center space-x-1.5 cursor-pointer shadow-2xs transition-colors"
           >
             <Edit2 className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-            <span>Adjust Settlement Data</span>
+            <span>Adjust Balances</span>
           </button>
         </div>
       </div>
@@ -223,15 +223,15 @@ export const EarningsView: React.FC<EarningsViewProps> = ({ owner }) => {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center space-x-2 text-xs font-mono font-bold uppercase text-amber-800 dark:text-amber-400">
               <Banknote className="w-4 h-4 text-amber-600" />
-              <span>Model A: Daily Fare Settlement</span>
+              <span>Daily Collections</span>
             </div>
             <span className="text-[10px] font-mono font-bold uppercase bg-amber-100 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800/60 px-2 py-0.5 rounded-md">
-              Live Firestore
+              Live
             </span>
           </div>
 
           <div className="text-xs text-slate-500 dark:text-neutral-400 uppercase font-mono tracking-wider font-semibold">
-            Collected Today (Literal Ticket Revenue)
+            Collected Today
           </div>
 
           <div className="text-3xl font-mono font-extrabold text-slate-900 dark:text-neutral-100 mt-1 mb-2">
@@ -239,7 +239,7 @@ export const EarningsView: React.FC<EarningsViewProps> = ({ owner }) => {
           </div>
 
           <div className="pt-3 border-t border-slate-100 dark:border-neutral-800 flex items-center justify-between text-xs text-slate-600 dark:text-neutral-400">
-            <span className="font-sans">Literal ticket sales recorded across today's active bus routes.</span>
+            <span className="font-sans">Today's ticket sales</span>
             <span className="font-mono font-bold text-amber-700 dark:text-amber-400 flex items-center space-x-1">
               <TrendingUp className="w-3.5 h-3.5" />
               <span>+12.4% vs avg</span>
@@ -252,7 +252,7 @@ export const EarningsView: React.FC<EarningsViewProps> = ({ owner }) => {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center space-x-2 text-xs font-mono font-bold uppercase text-emerald-800 dark:text-emerald-400">
               <Wallet className="w-4 h-4 text-emerald-600" />
-              <span>Model B: Running Wallet Escrow</span>
+              <span>Wallet Settlement</span>
             </div>
             <button
               onClick={handleRequestPayoutNow}
@@ -264,20 +264,20 @@ export const EarningsView: React.FC<EarningsViewProps> = ({ owner }) => {
           </div>
 
           <div className="text-xs text-slate-500 dark:text-neutral-400 uppercase font-mono tracking-wider font-semibold">
-            Wallet Balance (Pending Settlement)
+            Wallet Balance
           </div>
 
           <div className="text-3xl font-mono font-extrabold text-slate-900 dark:text-neutral-100 mt-1 mb-2">
-            {formatINR(owner.walletBalance || 185400)}
+            {formatINR(owner.walletBalance || 0)}
           </div>
 
           <div className="pt-3 border-t border-slate-100 dark:border-neutral-800 flex flex-wrap items-center justify-between gap-2 text-xs">
             <div className="flex items-center space-x-1 font-mono text-slate-600 dark:text-neutral-400">
               <Clock className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
-              <span>Next Payout: <strong className="text-slate-900 dark:text-neutral-100">{owner.nextPayoutDate || '2026-09-20'}</strong></span>
+              <span>Next Payout: <strong className="text-slate-900 dark:text-neutral-100">{owner.nextPayoutDate || 'Not scheduled yet'}</strong></span>
             </div>
             <div className="font-mono font-bold text-emerald-700 dark:text-emerald-400">
-              Amount: {formatINR(owner.nextPayoutAmount || owner.walletBalance || 185400)}
+              Amount: {formatINR(owner.nextPayoutAmount || 0)}
             </div>
           </div>
         </div>
@@ -288,9 +288,9 @@ export const EarningsView: React.FC<EarningsViewProps> = ({ owner }) => {
         <div className="flex items-center justify-between mb-6 pb-3 border-b border-slate-200 dark:border-neutral-800">
           <div>
             <h3 className="text-sm font-bold font-mono text-slate-900 dark:text-neutral-100 uppercase">
-              7-Day Ticket Revenue Readout
+              7-Day Revenue
             </h3>
-            <span className="text-xs text-slate-500 dark:text-neutral-400">Daily passenger fare collections breakdown</span>
+            <span className="text-xs text-slate-500 dark:text-neutral-400">Daily collections breakdown</span>
           </div>
 
           <div className="flex items-center space-x-3">
@@ -303,45 +303,54 @@ export const EarningsView: React.FC<EarningsViewProps> = ({ owner }) => {
               className="px-3.5 py-1.5 bg-slate-900 text-white dark:bg-neutral-900 dark:text-neutral-100 hover:bg-slate-800 dark:hover:bg-neutral-800 border border-slate-700 dark:border-neutral-700 text-xs font-mono uppercase font-bold rounded-lg transition-colors flex items-center space-x-1.5 cursor-pointer shadow-2xs"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Log Daily Revenue</span>
+              <span>Log Revenue</span>
             </button>
           </div>
         </div>
 
         {/* Custom Bar Visualizer */}
-        <div className="h-56 pt-6 flex items-end justify-between space-x-2 sm:space-x-4 border-b border-slate-200 dark:border-neutral-800">
-          {earnings.map((entry) => {
-            const heightPercent = Math.min(100, Math.max(15, (entry.ticketRevenue / maxRevenueDay) * 100));
-            return (
-              <div key={entry.id} className="flex-1 flex flex-col items-center group relative">
-                {/* Hover Tooltip */}
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-12 bg-black text-white px-2.5 py-1 rounded-md text-[11px] font-mono z-10 whitespace-nowrap shadow-md pointer-events-none border border-neutral-800">
-                  <div>{entry.date} ({entry.day})</div>
-                  <div className="text-amber-400 font-bold">{formatINR(entry.ticketRevenue)}</div>
+        {earnings.length === 0 ? (
+          <div className="py-12 px-4 text-center border border-dashed border-slate-200 dark:border-neutral-800 rounded-lg">
+            <Banknote className="w-8 h-8 text-slate-300 dark:text-neutral-700 mx-auto mb-2" />
+            <p className="text-xs text-slate-500 dark:text-neutral-400 font-mono">
+              No revenue entries recorded yet. Click &apos;Log Revenue&apos; to record daily collections.
+            </p>
+          </div>
+        ) : (
+          <div className="h-56 pt-6 flex items-end justify-between space-x-2 sm:space-x-4 border-b border-slate-200 dark:border-neutral-800">
+            {earnings.map((entry) => {
+              const heightPercent = Math.min(100, Math.max(15, (entry.ticketRevenue / maxRevenueDay) * 100));
+              return (
+                <div key={entry.id} className="flex-1 flex flex-col items-center group relative">
+                  {/* Hover Tooltip */}
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-12 bg-black text-white px-2.5 py-1 rounded-md text-[11px] font-mono z-10 whitespace-nowrap shadow-md pointer-events-none border border-neutral-800">
+                    <div>{entry.date} ({entry.day})</div>
+                    <div className="text-amber-400 font-bold">{formatINR(entry.ticketRevenue)}</div>
+                  </div>
+
+                  {/* Amount on top of bar */}
+                  <span className="text-[10px] font-mono font-bold text-amber-700 dark:text-amber-400 mb-1 hidden sm:block">
+                    ₹{(entry.ticketRevenue / 1000).toFixed(1)}k
+                  </span>
+
+                  {/* Bar */}
+                  <div
+                    style={{ height: `${heightPercent}%` }}
+                    className="w-full max-w-[48px] bg-amber-500 hover:bg-amber-600 transition-all border-t border-x border-amber-600 rounded-t-md"
+                  />
+
+                  {/* Day Label */}
+                  <span className="text-xs font-mono font-semibold text-slate-900 dark:text-neutral-200 mt-2">
+                    {entry.day}
+                  </span>
+                  <span className="text-[10px] font-mono text-slate-400 dark:text-neutral-500 hidden sm:block">
+                    {entry.date.slice(8)}
+                  </span>
                 </div>
-
-                {/* Amount on top of bar */}
-                <span className="text-[10px] font-mono font-bold text-amber-700 dark:text-amber-400 mb-1 hidden sm:block">
-                  ₹{(entry.ticketRevenue / 1000).toFixed(1)}k
-                </span>
-
-                {/* Bar */}
-                <div
-                  style={{ height: `${heightPercent}%` }}
-                  className="w-full max-w-[48px] bg-amber-500 hover:bg-amber-600 transition-all border-t border-x border-amber-600 rounded-t-md"
-                />
-
-                {/* Day Label */}
-                <span className="text-xs font-mono font-semibold text-slate-900 dark:text-neutral-200 mt-2">
-                  {entry.day}
-                </span>
-                <span className="text-[10px] font-mono text-slate-400 dark:text-neutral-500 hidden sm:block">
-                  {entry.date.slice(8)}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Payment Channel Breakdown Cards */}
@@ -403,9 +412,9 @@ export const EarningsView: React.FC<EarningsViewProps> = ({ owner }) => {
         <div className="p-4 border-b border-slate-200 dark:border-neutral-800 bg-slate-50/70 dark:bg-neutral-900/40 flex flex-wrap items-center justify-between gap-2">
           <div>
             <span className="text-xs font-mono uppercase font-bold text-slate-800 dark:text-neutral-200 block">
-              Daily Collections Ledger ({earnings.length} Entries)
+              Collections Ledger ({earnings.length})
             </span>
-            <span className="text-[11px] font-mono text-slate-500 dark:text-neutral-400">Firestore `earnings` collection</span>
+            <span className="text-[11px] font-mono text-slate-500 dark:text-neutral-400">Recorded transactions</span>
           </div>
 
           <div className="flex items-center space-x-2">
@@ -423,7 +432,7 @@ export const EarningsView: React.FC<EarningsViewProps> = ({ owner }) => {
               className="px-3 py-1.5 bg-white dark:bg-neutral-900 hover:bg-slate-50 dark:hover:bg-neutral-800 border border-slate-200 dark:border-neutral-800 hover:border-amber-600 text-slate-700 dark:text-neutral-300 text-xs font-mono font-bold uppercase rounded-lg transition-colors flex items-center space-x-1.5 cursor-pointer shadow-2xs"
             >
               <Download className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-              <span>Export Statement (PDF)</span>
+              <span>Export PDF</span>
             </button>
           </div>
         </div>
@@ -433,10 +442,10 @@ export const EarningsView: React.FC<EarningsViewProps> = ({ owner }) => {
             <thead>
               <tr className="border-b border-slate-200 dark:border-neutral-800 bg-slate-50/50 dark:bg-neutral-900/60 text-[11px] font-mono uppercase text-slate-500 dark:text-neutral-400">
                 <th className="py-3 px-4">Date & Day</th>
-                <th className="py-3 px-4">Cash Collection</th>
-                <th className="py-3 px-4">UPI QR Revenue</th>
+                <th className="py-3 px-4">Cash</th>
+                <th className="py-3 px-4">UPI QR</th>
                 <th className="py-3 px-4">Card POS</th>
-                <th className="py-3 px-4 text-right">Daily Total Revenue</th>
+                <th className="py-3 px-4 text-right">Total Revenue</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-neutral-800 text-xs font-mono">
@@ -457,7 +466,7 @@ export const EarningsView: React.FC<EarningsViewProps> = ({ owner }) => {
                             title="Click to view root cause analysis"
                           >
                             <AlertTriangle className="w-3 h-3 text-amber-700 dark:text-amber-400 flex-shrink-0" />
-                            <span>Anomaly detected: -{anomaly.percentDrop}% vs weekday avg</span>
+                            <span>-{anomaly.percentDrop}% vs avg</span>
                           </button>
                         )}
                       </div>
@@ -488,7 +497,7 @@ export const EarningsView: React.FC<EarningsViewProps> = ({ owner }) => {
           <div className="bg-white dark:bg-[#121214] border border-slate-200 dark:border-neutral-800 max-w-md w-full max-h-[90vh] flex flex-col rounded-xl shadow-xl animate-in fade-in overflow-hidden my-auto text-slate-900 dark:text-neutral-100">
             <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-200 dark:border-neutral-800 flex-shrink-0">
               <h3 className="text-base font-extrabold text-slate-900 dark:text-neutral-100 font-sans">
-                Adjust Settlement Figures (Firestore)
+                Adjust Balances
               </h3>
               <button
                 type="button"
@@ -571,7 +580,7 @@ export const EarningsView: React.FC<EarningsViewProps> = ({ owner }) => {
                   className="px-4 py-2 bg-slate-900 dark:bg-amber-600 text-white dark:text-slate-950 font-mono font-bold text-xs uppercase rounded-lg flex items-center space-x-1 cursor-pointer"
                 >
                   <Check className="w-4 h-4" />
-                  <span>Update Firestore Profile</span>
+                  <span>Save Changes</span>
                 </button>
               </div>
             </form>
@@ -584,7 +593,7 @@ export const EarningsView: React.FC<EarningsViewProps> = ({ owner }) => {
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#121214] border border-slate-200 dark:border-neutral-800 max-w-md w-full p-6 rounded-xl shadow-xl animate-in fade-in text-slate-900 dark:text-neutral-100">
             <h3 className="text-base font-extrabold text-slate-900 dark:text-neutral-100 mb-4 pb-2 border-b border-slate-200 dark:border-neutral-800 font-sans">
-              Log Ticket Revenue Entry
+              Log Revenue
             </h3>
 
             <form onSubmit={handleSaveEarningsLog} className="space-y-4">

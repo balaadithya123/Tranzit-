@@ -9,15 +9,15 @@ import {
   FileText, 
   Fuel, 
   Download, 
-  Sparkles, 
   Moon, 
   Sun, 
   X, 
   CornerDownLeft,
-  MapPin
+  MapPin,
+  Settings,
+  Trash2
 } from 'lucide-react';
 import { Bus, Driver, OwnerProfile, RouteItem } from '../types';
-import { DEMO_SaaS_UID, DEMO_LEASE_UID } from '../lib/seedData';
 import { useTheme } from '../context/ThemeContext';
 
 interface CommandPaletteProps {
@@ -28,7 +28,6 @@ interface CommandPaletteProps {
   drivers: Driver[];
   routes?: RouteItem[];
   onNavigateTab: (tab: string) => void;
-  onSwitchOwner?: (ownerId: string) => void;
   onOpenReportsModal: () => void;
   onOpenProfileModal: () => void;
 }
@@ -51,7 +50,6 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   drivers,
   routes = [],
   onNavigateTab,
-  onSwitchOwner,
   onOpenReportsModal,
   onOpenProfileModal
 }) => {
@@ -137,6 +135,16 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       badge: '6'
     });
 
+    list.push({
+      id: 'nav-settings',
+      title: 'Settings & Fleet Administration',
+      subtitle: 'Company profile, commercial plan, depot city, delete account',
+      category: 'Navigation',
+      icon: Settings,
+      action: () => { onNavigateTab('settings'); onClose(); },
+      badge: '7'
+    });
+
     // Quick Actions
     list.push({
       id: 'act-report',
@@ -145,6 +153,24 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       category: 'Actions',
       icon: Download,
       action: () => { onClose(); onOpenReportsModal(); }
+    });
+
+    list.push({
+      id: 'act-settings',
+      title: 'Open Account & Fleet Settings',
+      subtitle: 'Manage profile, plan parameters and lifecycle options',
+      category: 'Actions',
+      icon: Settings,
+      action: () => { onClose(); onNavigateTab('settings'); }
+    });
+
+    list.push({
+      id: 'act-delete-account',
+      title: 'Delete Account & Clear All Data',
+      subtitle: 'Permanently purge operator profile, buses, routes, drivers & logs',
+      category: 'Actions',
+      icon: Trash2,
+      action: () => { onClose(); onNavigateTab('settings'); }
     });
 
     list.push({
@@ -164,20 +190,6 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       icon: resolvedTheme === 'dark' ? Sun : Moon,
       action: () => { toggleTheme(); onClose(); }
     });
-
-    if (onSwitchOwner) {
-      list.push({
-        id: 'act-switch-mode',
-        title: isSaaS ? 'Switch to Lease Operator (Vikramaditya Verma)' : 'Switch to SaaS Operator (Rajesh Sharma)',
-        subtitle: isSaaS ? 'Experience guaranteed zero-risk fixed yield model' : 'Experience full-ticketing SaaS software model',
-        category: 'Actions',
-        icon: Sparkles,
-        action: () => {
-          onSwitchOwner(isSaaS ? DEMO_LEASE_UID : DEMO_SaaS_UID);
-          onClose();
-        }
-      });
-    }
 
     // Dynamic Bus entries
     buses.forEach(bus => {
@@ -226,7 +238,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     });
 
     return list;
-  }, [owner, buses, drivers, routes, isSaaS, resolvedTheme, onNavigateTab, onSwitchOwner, onOpenReportsModal, onOpenProfileModal, toggleTheme, onClose]);
+  }, [owner, buses, drivers, routes, isSaaS, resolvedTheme, onNavigateTab, onOpenReportsModal, onOpenProfileModal, toggleTheme, onClose]);
 
   // Filter commands by queryText
   const filteredCommands = useMemo(() => {

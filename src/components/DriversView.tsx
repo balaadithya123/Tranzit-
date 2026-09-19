@@ -180,15 +180,13 @@ export const DriversView: React.FC<DriversViewProps> = ({ owner }) => {
         <div>
           <div className="flex items-center space-x-2 text-xs font-mono text-slate-500 dark:text-neutral-400 uppercase tracking-widest mb-1.5 font-bold">
             <Users className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-            <span>Personnel & Compliance Management</span>
-            <span>•</span>
-            <span className="text-emerald-700 dark:text-emerald-400 font-bold">RTO Regulatory Standard</span>
+            <span>Drivers</span>
           </div>
           <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-neutral-100 tracking-tight font-sans">
-            Driver Roster & Route Dispatch
+            Drivers & Roster
           </h1>
           <p className="text-xs text-slate-500 dark:text-neutral-400 font-sans mt-0.5">
-            Monitor driver profiles, commercial Heavy Vehicle (HMV) licenses, PSV badges, and daily bus route schedules.
+            Driver profiles, license validity, and assigned routes.
           </p>
         </div>
 
@@ -200,7 +198,7 @@ export const DriversView: React.FC<DriversViewProps> = ({ owner }) => {
             title="Print or export driver manifest"
           >
             <Printer className="w-3.5 h-3.5 text-slate-500 dark:text-neutral-400" />
-            <span>Print Roster</span>
+            <span>Print</span>
           </button>
 
           <button
@@ -208,7 +206,7 @@ export const DriversView: React.FC<DriversViewProps> = ({ owner }) => {
             className="px-4 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-amber-600 dark:hover:bg-amber-700 text-white dark:text-slate-950 font-mono font-bold text-xs uppercase tracking-wider rounded-lg transition-colors flex items-center space-x-2 cursor-pointer shadow-xs"
           >
             <Plus className="w-4 h-4 text-amber-400 dark:text-slate-950" />
-            <span>Enroll Driver</span>
+            <span>Add Driver</span>
           </button>
         </div>
       </div>

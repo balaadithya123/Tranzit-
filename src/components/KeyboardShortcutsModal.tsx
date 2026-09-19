@@ -30,6 +30,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
     { key: '4', desc: isSaaS ? 'Navigate to Routes & Dynamic Fares' : 'Reserved' },
     { key: '5', desc: isSaaS ? 'Navigate to Earnings & Settlements' : 'Navigate to Lease Payouts' },
     { key: '6', desc: 'Navigate to Fuel & Fastag Perks' },
+    { key: '7', desc: 'Navigate to Settings & Account Administration' },
   ];
 
   const actionShortcuts = [

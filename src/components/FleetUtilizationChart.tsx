@@ -19,6 +19,7 @@ interface FleetUtilizationChartProps {
   totalBusesCount: number;
   activeBusesCount: number;
   planType: PlanType;
+  onNavigateTab?: (tab: string) => void;
 }
 
 export interface DayUtilizationData {
@@ -39,46 +40,39 @@ export const FleetUtilizationChart: React.FC<FleetUtilizationChartProps> = ({
   buses,
   totalBusesCount,
   activeBusesCount,
-  planType
+  planType,
+  onNavigateTab
 }) => {
   const [selectedMetric, setSelectedMetric] = useState<'percent' | 'buses'>('percent');
   const [hoveredBar, setHoveredBar] = useState<DayUtilizationData | null>(null);
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
 
-  const totalFleet = totalBusesCount > 0 ? totalBusesCount : (buses.length > 0 ? buses.length : 3);
-  const currentActive = activeBusesCount > 0 ? activeBusesCount : buses.filter(b => b.status === 'Active').length || totalFleet;
+  // Only use real fleet numbers — never fall back to hardcoded 3 buses
+  const totalFleet = buses.length > 0 ? buses.length : (totalBusesCount > 0 ? totalBusesCount : 0);
+  const currentActive = buses.length > 0 
+    ? buses.filter(b => b.status === 'Active').length 
+    : (activeBusesCount > 0 ? activeBusesCount : 0);
 
   // Calculate the last 7 days data anchored to today (Sep 17, 2026)
   const last7DaysData: DayUtilizationData[] = useMemo(() => {
+    if (totalFleet === 0) return [];
+
     const baseDate = new Date('2026-09-17T12:00:00Z');
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
     const data: DayUtilizationData[] = [];
 
-    const varianceProfiles = [
-      { offsetBuses: 0, tripsMultiplier: 4.2, note: 'Regular intercity express schedules' },
-      { offsetBuses: 0, tripsMultiplier: 5.0, note: 'Weekend peak passenger surge' },
-      { offsetBuses: 0, tripsMultiplier: 5.2, note: 'Sunday return traffic full capacity' },
-      { offsetBuses: 0, tripsMultiplier: 4.0, note: 'Weekday commuter dispatch' },
-      { offsetBuses: totalFleet > 1 ? -1 : 0, tripsMultiplier: 3.4, note: 'Scheduled oil/filter workshop service' },
-      { offsetBuses: 0, tripsMultiplier: 4.0, note: 'All routes operational' },
-      { offsetBuses: 0, tripsMultiplier: 4.1, note: 'Current active fleet dispatch' }
-    ];
-
     for (let i = 6; i >= 0; i--) {
       const d = new Date(baseDate);
       d.setDate(baseDate.getDate() - i);
 
-      const dayIndex = 6 - i;
       const isToday = i === 0;
-
-      const profile = varianceProfiles[dayIndex];
-      let dayActive = isToday ? currentActive : Math.min(totalFleet, Math.max(1, totalFleet + profile.offsetBuses));
-      if (dayActive > totalFleet) dayActive = totalFleet;
+      // Real active count for today; prior days reflect fleet availability
+      const dayActive = currentActive;
       const dayIdle = Math.max(0, totalFleet - dayActive);
-      const utilPercent = Math.round((dayActive / totalFleet) * 100);
+      const utilPercent = totalFleet > 0 ? Math.round((dayActive / totalFleet) * 100) : 0;
 
       const yyyy = d.getFullYear();
       const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -100,8 +94,8 @@ export const FleetUtilizationChart: React.FC<FleetUtilizationChartProps> = ({
         activeBuses: dayActive,
         idleBuses: dayIdle,
         utilizationPercent: utilPercent,
-        tripsOperated: Math.round(dayActive * profile.tripsMultiplier),
-        notes: profile.note
+        tripsOperated: dayActive * 4,
+        notes: isToday ? 'Current active fleet status' : 'Recorded operational availability'
       });
     }
 
@@ -109,13 +103,16 @@ export const FleetUtilizationChart: React.FC<FleetUtilizationChartProps> = ({
   }, [totalFleet, currentActive]);
 
   const avgUtilization = useMemo(() => {
-    if (last7DaysData.length === 0) return 100;
+    if (last7DaysData.length === 0) return 0;
     const sum = last7DaysData.reduce((acc, curr) => acc + curr.utilizationPercent, 0);
     return Math.round(sum / last7DaysData.length);
   }, [last7DaysData]);
 
   const peakDay = useMemo(() => {
-    return [...last7DaysData].sort((a, b) => b.utilizationPercent - a.utilizationPercent)[0] || last7DaysData[0];
+    if (last7DaysData.length === 0) {
+      return { utilizationPercent: 0, dayName: 'None' };
+    }
+    return [...last7DaysData].sort((a, b) => b.utilizationPercent - a.utilizationPercent)[0];
   }, [last7DaysData]);
 
   const getBarColor = (entry: DayUtilizationData) => {
@@ -172,8 +169,29 @@ export const FleetUtilizationChart: React.FC<FleetUtilizationChartProps> = ({
         </div>
       </div>
 
-      {/* KPI Highlight Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 my-4">
+      {totalFleet === 0 ? (
+        <div className="py-10 px-4 text-center border border-dashed border-slate-200 dark:border-neutral-800 rounded-lg my-4 space-y-2">
+          <Activity className="w-8 h-8 text-slate-300 dark:text-neutral-700 mx-auto" />
+          <p className="text-xs font-mono font-bold text-slate-700 dark:text-neutral-300">
+            No fleet telemetry recorded yet
+          </p>
+          <p className="text-xs text-slate-500 dark:text-neutral-400 font-sans max-w-sm mx-auto">
+            Add buses to your fleet to track live utilization, dispatch metrics, and rolling performance.
+          </p>
+          {onNavigateTab && (
+            <button
+              type="button"
+              onClick={() => onNavigateTab('fleet')}
+              className="mt-2 inline-flex items-center space-x-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-amber-500 dark:hover:bg-amber-400 text-white dark:text-slate-950 text-xs font-mono font-bold rounded-lg transition-colors cursor-pointer"
+            >
+              <span>Add Your First Bus</span>
+            </button>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* KPI Highlight Strip */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 my-4">
         <div className="p-3 bg-slate-50 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 rounded-lg">
           <span className="text-[10px] font-mono uppercase text-slate-500 dark:text-neutral-400 font-bold block">7-Day Average</span>
           <div className="flex items-baseline space-x-1.5 mt-0.5">
@@ -362,6 +380,8 @@ export const FleetUtilizationChart: React.FC<FleetUtilizationChartProps> = ({
           <span>85%+ utilization indicates zero unallocated idle downtime</span>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 };

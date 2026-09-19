@@ -110,7 +110,10 @@ async function startServer() {
         if (!b.nextServiceDue) return false;
         return new Date(b.nextServiceDue).getTime() < nowTime;
       });
-      const lowHealthBuses = (buses || []).filter((b: any) => (b.onTimePercent && b.onTimePercent < 85) || (b.fuelEfficiencyScore && b.fuelEfficiencyScore < 80));
+      const lowHealthBuses = (buses || []).filter((b: any) => 
+        (b.onTimePercent !== undefined && b.onTimePercent !== null && b.onTimePercent < 85) || 
+        (b.fuelEfficiencyScore !== undefined && b.fuelEfficiencyScore !== null && b.fuelEfficiencyScore < 80)
+      );
 
       if (overdueBuses.length > 0) {
         const top = overdueBuses[0];

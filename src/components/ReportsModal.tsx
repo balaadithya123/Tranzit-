@@ -327,7 +327,7 @@ export const ReportsModal: React.FC<ReportsModalProps> = ({
             {/* Active Buses */}
             <div className="bg-white dark:bg-neutral-900 p-2.5 rounded-lg border border-slate-200 dark:border-neutral-800">
               <span className="text-[10px] uppercase text-slate-500 dark:text-neutral-400 block mb-0.5">Fleet Size</span>
-              <span className="font-bold text-sm text-emerald-700 dark:text-emerald-400">{buses.length || owner.activeBusesCount || 3} Buses</span>
+              <span className="font-bold text-sm text-emerald-700 dark:text-emerald-400">{(buses.length > 0 ? buses.length : (owner.activeBusesCount ?? 3))} Buses</span>
               <span className="text-[10px] text-slate-400 dark:text-neutral-500 block mt-0.5">
                 {buses.filter(b => b.status === 'Active').length} road-active
               </span>

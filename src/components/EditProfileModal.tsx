@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { OwnerProfile } from '../types';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { MapPin, Building2, Phone, Users, X, Check, Calculator, Bus } from 'lucide-react';
+import { isDemoAccount, cascadeDeleteOwnerAccount } from '../lib/accountService';
+import { MapPin, Building2, Phone, Users, X, Check, Calculator, Bus, Trash2, AlertTriangle, KeyRound, Loader2 } from 'lucide-react';
 
 interface EditProfileModalProps {
   owner: OwnerProfile;
   isOpen: boolean;
   onClose: () => void;
+  onAccountDeleted?: () => void;
 }
 
 const INDIAN_HUBS = [
@@ -25,24 +27,39 @@ const INDIAN_HUBS = [
   "Delhi NCR"
 ];
 
-export const EditProfileModal: React.FC<EditProfileModalProps> = ({ owner, isOpen, onClose }) => {
+export const EditProfileModal: React.FC<EditProfileModalProps> = ({ owner, isOpen, onClose, onAccountDeleted }) => {
+  const [name, setName] = useState(owner.name || '');
   const [companyName, setCompanyName] = useState(owner.companyName || '');
   const [city, setCity] = useState(owner.city || 'Bengaluru');
   const [phone, setPhone] = useState(owner.phone || '+91 98450 12345');
-  const [activeBusesCount, setActiveBusesCount] = useState<number>(owner.activeBusesCount ?? 3);
-  const [avgDailyRiders, setAvgDailyRiders] = useState(owner.avgDailyRiders || 1240);
+  const [activeBusesCount, setActiveBusesCount] = useState<number>(owner.activeBusesCount ?? 0);
+  const [avgDailyRiders, setAvgDailyRiders] = useState(owner.avgDailyRiders || 0);
   const [saasFeePerBus, setSaasFeePerBus] = useState(owner.saasFeePerBus || 4500);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [confirmDeleteInput, setConfirmDeleteInput] = useState('');
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [needsPasswordReauth, setNeedsPasswordReauth] = useState(false);
+  const [reauthPassword, setReauthPassword] = useState('');
+
+  const isDemo = isDemoAccount(owner);
 
   // Sync state when owner prop updates
   useEffect(() => {
+    setName(owner.name || '');
     setCompanyName(owner.companyName || '');
     setCity(owner.city || 'Bengaluru');
     setPhone(owner.phone || '+91 98450 12345');
-    setActiveBusesCount(owner.activeBusesCount ?? 3);
-    setAvgDailyRiders(owner.avgDailyRiders || 1240);
+    setActiveBusesCount(owner.activeBusesCount ?? 0);
+    setAvgDailyRiders(owner.avgDailyRiders || 0);
     setSaasFeePerBus(owner.saasFeePerBus || 4500);
+    setShowConfirmDelete(false);
+    setConfirmDeleteInput('');
+    setDeleteError(null);
+    setNeedsPasswordReauth(false);
+    setReauthPassword('');
   }, [owner]);
 
   // Lock background body scroll when modal is open
@@ -64,6 +81,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ owner, isOpe
     setSaving(true);
     try {
       const updatedProfile: Partial<OwnerProfile> = {
+        name,
         companyName,
         city,
         phone,
@@ -82,6 +100,30 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ owner, isOpe
       console.error("Failed to update owner profile:", err);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (confirmDeleteInput.trim() !== 'DELETE') return;
+    setDeleting(true);
+    setDeleteError(null);
+
+    try {
+      await cascadeDeleteOwnerAccount(owner, reauthPassword ? reauthPassword.trim() : undefined);
+      onClose();
+      if (onAccountDeleted) {
+        onAccountDeleted();
+      }
+    } catch (err: any) {
+      console.error("Account deletion failed:", err);
+      if (err?.code === 'auth/requires-recent-login' || err?.message?.includes('Recent authentication required')) {
+        setNeedsPasswordReauth(true);
+        setDeleteError("Recent authentication required by Firebase. Please enter your password below to finalize deletion.");
+      } else {
+        setDeleteError(err?.message || "Failed to delete account. Please try again.");
+      }
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -150,6 +192,22 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ owner, isOpe
                 onChange={(e) => setCity(e.target.value)}
                 placeholder="Or enter custom hub city"
                 className="w-full mt-2.5 px-3 py-2 text-xs font-mono border border-slate-200 dark:border-neutral-700 rounded-lg bg-slate-50 dark:bg-neutral-900 text-slate-900 dark:text-neutral-100 focus:outline-none focus:border-amber-500"
+              />
+            </div>
+
+            {/* Operator Full Name */}
+            <div>
+              <label className="block text-xs font-mono uppercase text-slate-700 dark:text-neutral-300 font-bold mb-1 flex items-center space-x-1">
+                <Users className="w-3.5 h-3.5 text-slate-400 dark:text-neutral-500" />
+                <span>Operator Full Name</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Bala Adithya"
+                className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-neutral-700 rounded-lg bg-slate-50 dark:bg-neutral-900 text-slate-900 dark:text-neutral-100 focus:outline-none focus:border-amber-500"
               />
             </div>
 
@@ -229,6 +287,109 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ owner, isOpe
                 <p className="text-[11px] text-amber-900/80 dark:text-amber-300/80 mt-1 font-mono">
                   Current total fee: ₹{saasFeePerBus.toLocaleString('en-IN')} × {activeBusesCount} buses = ₹{(saasFeePerBus * activeBusesCount).toLocaleString('en-IN')}/mo
                 </p>
+              </div>
+            )}
+
+            {/* Danger Zone: Account & Data Deletion (Real Accounts Only) */}
+            {!isDemo && (
+              <div className="pt-4 mt-4 border-t border-rose-200 dark:border-rose-950/60">
+                <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg">
+                  <div className="flex items-center space-x-2 text-xs font-mono font-bold text-rose-700 dark:text-rose-400 uppercase">
+                    <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                    <span>Danger Zone • Delete Account</span>
+                  </div>
+                  <p className="text-[11px] text-rose-900/80 dark:text-rose-300/80 mt-1 font-sans">
+                    Permanently cascade-delete this owner account and all associated buses, routes, drivers, maintenance logs, and financial records from Firestore.
+                  </p>
+
+                  {deleteError && (
+                    <div className="mt-2.5 p-2.5 bg-red-100 dark:bg-red-900/40 border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 text-xs font-mono rounded-lg">
+                      {deleteError}
+                    </div>
+                  )}
+
+                  {showConfirmDelete ? (
+                    <div className="mt-3 p-3 bg-rose-100/90 dark:bg-rose-950/90 border border-rose-300 dark:border-rose-800 rounded-lg space-y-3">
+                      <p className="text-xs font-bold text-rose-900 dark:text-rose-200">
+                        Irreversible Action: Type <span className="font-mono bg-white dark:bg-neutral-900 px-1.5 py-0.5 rounded text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-rose-700 font-bold">DELETE</span> to confirm:
+                      </p>
+
+                      <input
+                        type="text"
+                        value={confirmDeleteInput}
+                        onChange={(e) => setConfirmDeleteInput(e.target.value)}
+                        placeholder="Type DELETE"
+                        disabled={deleting}
+                        className="w-full px-3 py-1.5 text-xs font-mono bg-white dark:bg-neutral-900 border border-rose-300 dark:border-rose-700 rounded-md text-slate-900 dark:text-neutral-100 focus:outline-none focus:border-rose-500"
+                      />
+
+                      {needsPasswordReauth && (
+                        <div className="space-y-1.5 pt-1">
+                          <label className="block text-[11px] font-mono text-rose-900 dark:text-rose-300 font-semibold flex items-center space-x-1">
+                            <KeyRound className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                            <span>Enter your password to verify:</span>
+                          </label>
+                          <input
+                            type="password"
+                            value={reauthPassword}
+                            onChange={(e) => setReauthPassword(e.target.value)}
+                            placeholder="Current account password"
+                            disabled={deleting}
+                            className="w-full px-3 py-1.5 text-xs font-mono bg-white dark:bg-neutral-900 border border-rose-300 dark:border-rose-700 rounded-md text-slate-900 dark:text-neutral-100 focus:outline-none focus:border-rose-500"
+                          />
+                        </div>
+                      )}
+
+                      <div className="flex items-center space-x-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={handleDeleteAccount}
+                          disabled={confirmDeleteInput.trim() !== 'DELETE' || deleting || (needsPasswordReauth && !reauthPassword.trim())}
+                          className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 disabled:bg-rose-400 dark:disabled:bg-rose-900/60 disabled:cursor-not-allowed text-white text-xs font-mono font-bold uppercase rounded-md cursor-pointer flex items-center space-x-1.5"
+                        >
+                          {deleting ? (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              <span>Deleting Account...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>{needsPasswordReauth ? 'Verify & Delete Account' : 'Delete Account'}</span>
+                            </>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowConfirmDelete(false);
+                            setConfirmDeleteInput('');
+                            setDeleteError(null);
+                            setNeedsPasswordReauth(false);
+                            setReauthPassword('');
+                          }}
+                          disabled={deleting}
+                          className="px-3 py-1.5 bg-white dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 text-xs font-mono rounded-md border border-slate-200 dark:border-neutral-700 hover:bg-slate-50 cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowConfirmDelete(true);
+                        setConfirmDeleteInput('');
+                        setDeleteError(null);
+                      }}
+                      className="mt-2.5 px-3 py-1.5 bg-rose-100 hover:bg-rose-200 dark:bg-rose-950/50 dark:hover:bg-rose-900/60 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-800/60 rounded-md text-xs font-mono font-semibold transition-colors flex items-center space-x-1.5 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                      <span>Delete Account</span>
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </div>

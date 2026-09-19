@@ -83,9 +83,9 @@ export const FuelPerksView: React.FC<FuelPerksViewProps> = ({ owner }) => {
   }, [buses]);
 
   // Aggregates for summary stats
-  const totalIncentiveBudget = buses.reduce((acc, b) => acc + (b.fuelIncentiveCredit || 2000), 0);
-  const avgOnTime = Math.round(buses.reduce((acc, b) => acc + (b.onTimePercent || 90), 0) / (buses.length || 1));
-  const avgFuelRating = Math.round(buses.reduce((acc, b) => acc + (b.fuelEfficiencyScore || 88), 0) / (buses.length || 1));
+  const totalIncentiveBudget = buses.reduce((acc, b) => acc + (b.fuelIncentiveCredit || 0), 0);
+  const avgOnTime = buses.length > 0 ? Math.round(buses.reduce((acc, b) => acc + (b.onTimePercent || 0), 0) / buses.length) : 0;
+  const avgFuelRating = buses.length > 0 ? Math.round(buses.reduce((acc, b) => acc + (b.fuelEfficiencyScore || 0), 0) / buses.length) : 0;
 
   return (
     <div className="space-y-6">
@@ -94,20 +94,20 @@ export const FuelPerksView: React.FC<FuelPerksViewProps> = ({ owner }) => {
         <div>
           <div className="flex items-center space-x-2 text-xs font-mono text-amber-700 dark:text-amber-400 uppercase tracking-widest mb-1.5 font-bold">
             <Fuel className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-            <span>Driver Performance & Incentive Engine</span>
+            <span>Driver Perks</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-neutral-100 tracking-tight flex items-center space-x-2 font-sans">
-            <span>Fuel & Driver Perks Management</span>
+            <span>Fuel & Driver Perks</span>
           </h2>
           <p className="text-xs text-slate-500 dark:text-neutral-400 font-sans mt-0.5">
-            Real-time driver incentive scoring calculated by <strong>Gemini AI</strong> based on live Firestore on-time percentages and fuel efficiency ratings.
+            Driver incentive scoring based on on-time performance and fuel efficiency.
           </p>
         </div>
 
         <div className="flex items-center space-x-2">
           <span className="px-3 py-1.5 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-800/60 font-mono text-xs font-bold rounded-lg flex items-center space-x-1.5 shadow-2xs">
             <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-            <span>Gemini AI Engine Active</span>
+            <span>AI Scored</span>
           </span>
         </div>
       </div>
@@ -118,7 +118,7 @@ export const FuelPerksView: React.FC<FuelPerksViewProps> = ({ owner }) => {
         <div className="bg-white dark:bg-[#121214] border border-slate-200 dark:border-neutral-800 border-l-4 border-l-amber-600 p-5 rounded-xl shadow-xs transition-colors">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-mono uppercase font-bold text-slate-500 dark:text-neutral-400">
-              Total Monthly Incentive Pool
+              Incentive Pool
             </span>
             <Award className="w-4 h-4 text-amber-600 dark:text-amber-400" />
           </div>
@@ -126,7 +126,7 @@ export const FuelPerksView: React.FC<FuelPerksViewProps> = ({ owner }) => {
             {formatINR(totalIncentiveBudget)}
           </div>
           <div className="text-[11px] font-mono text-amber-800 dark:text-amber-400 mt-1">
-            Budget allocated across {buses.length} registered fleet drivers
+            {buses.length} registered drivers
           </div>
         </div>
 
@@ -134,7 +134,7 @@ export const FuelPerksView: React.FC<FuelPerksViewProps> = ({ owner }) => {
         <div className="bg-white dark:bg-[#121214] border border-slate-200 dark:border-neutral-800 border-l-4 border-l-emerald-600 p-5 rounded-xl shadow-xs transition-colors">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-mono uppercase font-bold text-slate-500 dark:text-neutral-400">
-              Fleet On-Time Average
+              Avg On-Time
             </span>
             <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           </div>
@@ -142,7 +142,7 @@ export const FuelPerksView: React.FC<FuelPerksViewProps> = ({ owner }) => {
             {avgOnTime}%
           </div>
           <div className="text-[11px] font-mono text-emerald-800 dark:text-emerald-400 mt-1">
-            Realtime punctuality benchmark from Firestore
+            Fleet punctuality benchmark
           </div>
         </div>
 
@@ -150,7 +150,7 @@ export const FuelPerksView: React.FC<FuelPerksViewProps> = ({ owner }) => {
         <div className="bg-white dark:bg-[#121214] border border-slate-200 dark:border-neutral-800 border-l-4 border-l-teal-600 p-5 rounded-xl shadow-xs transition-colors">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-mono uppercase font-bold text-slate-500 dark:text-neutral-400">
-              Fleet Fuel Efficiency Rating
+              Fuel Efficiency
             </span>
             <Fuel className="w-4 h-4 text-teal-600 dark:text-teal-400" />
           </div>
@@ -158,7 +158,7 @@ export const FuelPerksView: React.FC<FuelPerksViewProps> = ({ owner }) => {
             {avgFuelRating} / 100
           </div>
           <div className="text-[11px] font-mono text-teal-800 dark:text-teal-400 mt-1">
-            Eco-driving compliance score across active routes
+            Eco-driving compliance score
           </div>
         </div>
       </div>
@@ -169,12 +169,12 @@ export const FuelPerksView: React.FC<FuelPerksViewProps> = ({ owner }) => {
           <div className="flex items-center space-x-2">
             <UserCheck className="w-4 h-4 text-slate-700 dark:text-neutral-300" />
             <span className="text-xs font-mono uppercase font-bold text-slate-800 dark:text-neutral-200">
-              Driver Roster & AI Incentive Rationale ({buses.length} Drivers)
+              Driver Roster ({buses.length})
             </span>
           </div>
           <div className="text-[11px] font-mono text-amber-900 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30 px-2.5 py-1 rounded-md border border-amber-200 dark:border-amber-800/60 flex items-center space-x-1.5">
             <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-            <span>Rationale generated live from Firestore via Gemini API</span>
+            <span>AI Incentive scoring</span>
           </div>
         </div>
 

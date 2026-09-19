@@ -15,7 +15,8 @@ import {
   Download, 
   ChevronRight, 
   X,
-  Keyboard
+  Keyboard,
+  Settings
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -165,7 +166,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 >
                   <div className="flex items-center space-x-2.5">
                     <LayoutDashboard className="w-4 h-4" />
-                    <span>Mission Control</span>
+                    <span>Overview</span>
                   </div>
                   <div className="flex items-center space-x-1.5">
                     <span className="hidden xl:inline text-[10px] font-mono opacity-50">1</span>
@@ -184,7 +185,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 >
                   <div className="flex items-center space-x-2.5">
                     <Bus className="w-4 h-4" />
-                    <span>Fleet & Maintenance</span>
+                    <span>Fleet</span>
                   </div>
                   <div className="flex items-center space-x-1.5">
                     {maintenanceAlertsCount > 0 ? (
@@ -209,7 +210,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 >
                   <div className="flex items-center space-x-2.5">
                     <UserCheck className="w-4 h-4" />
-                    <span>Drivers & Roster</span>
+                    <span>Drivers</span>
                   </div>
                   <div className="flex items-center space-x-1.5">
                     {driverAlertsCount > 0 ? (
@@ -225,7 +226,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </div>
                 </button>
 
-                {/* Routes & Dynamic Fares (SaaS only) */}
+                {/* Routes (SaaS only) */}
                 {isSaaS && (
                   <button
                     onClick={() => handleNavClick('fares')}
@@ -235,7 +236,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   >
                     <div className="flex items-center space-x-2.5">
                       <Ticket className="w-4 h-4" />
-                      <span>Routes & Fares</span>
+                      <span>Routes</span>
                     </div>
                     <div className="flex items-center space-x-1.5">
                       <span className="hidden xl:inline text-[10px] font-mono opacity-50">4</span>
@@ -263,7 +264,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   >
                     <div className="flex items-center space-x-2.5">
                       <Wallet className="w-4 h-4" />
-                      <span>Earnings & Wallet</span>
+                      <span>Earnings</span>
                     </div>
                     <div className="flex items-center space-x-1.5">
                       <span className="hidden xl:inline text-[10px] font-mono opacity-50">5</span>
@@ -281,7 +282,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   >
                     <div className="flex items-center space-x-2.5">
                       <FileText className="w-4 h-4" />
-                      <span>Lease Contract & Payouts</span>
+                      <span>Lease & Payouts</span>
                     </div>
                     <div className="flex items-center space-x-1.5">
                       <span className="hidden xl:inline text-[10px] font-mono opacity-50">5</span>
@@ -297,7 +298,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {/* Section 3: Partner Network & Perks */}
             <div>
               <div className="px-3 mb-1 text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-neutral-500 font-bold">
-                Partner Services
+                Services
               </div>
               <div className="space-y-0.5">
                 <button
@@ -308,13 +309,39 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 >
                   <div className="flex items-center space-x-2.5">
                     <Fuel className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                    <span>Fuel & Fastag Perks</span>
+                    <span>Fuel Perks</span>
                   </div>
                   <div className="flex items-center space-x-1.5">
                     <span className="hidden xl:inline text-[10px] font-mono opacity-50">6</span>
                     <span className="text-[9px] font-mono px-1 py-0.2 bg-amber-500/15 text-amber-700 dark:text-amber-300 rounded font-bold border border-amber-500/30">
                       AI
                     </span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Section 4: System & Preferences */}
+            <div>
+              <div className="px-3 mb-1 text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-neutral-500 font-bold">
+                Preferences
+              </div>
+              <div className="space-y-0.5">
+                <button
+                  onClick={() => handleNavClick('settings')}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs cursor-pointer ${navItemClass(
+                    activeTab === 'settings'
+                  )}`}
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <Settings className="w-4 h-4" />
+                    <span>Settings & Account</span>
+                  </div>
+                  <div className="flex items-center space-x-1.5">
+                    <span className="hidden xl:inline text-[10px] font-mono opacity-50">7</span>
+                    {activeTab === 'settings' && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                    )}
                   </div>
                 </button>
               </div>
@@ -331,7 +358,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <span className="flex items-center space-x-2">
               <Download className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform" />
-              <span>Export Reports (PDF)</span>
+              <span>Export PDF</span>
             </span>
             <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-500" />
           </button>
@@ -365,7 +392,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className="w-full py-1.5 px-3 text-slate-500 dark:text-neutral-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/10 rounded-lg border border-transparent hover:border-red-500/20 transition-colors text-xs font-medium flex items-center justify-center space-x-1.5 cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" />
-            <span>Sign Out Operator</span>
+            <span>Sign Out</span>
           </button>
         </div>
       </aside>

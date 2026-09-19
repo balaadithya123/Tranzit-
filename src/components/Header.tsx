@@ -5,7 +5,6 @@ import {
   MapPin, 
   Download, 
   Edit3, 
-  Sparkles, 
   Search,
   Keyboard,
   LayoutDashboard,
@@ -14,9 +13,10 @@ import {
   Ticket,
   Wallet,
   FileText,
-  Fuel
+  Fuel,
+  LogOut,
+  Settings
 } from 'lucide-react';
-import { DEMO_SaaS_UID, DEMO_LEASE_UID } from '../lib/seedData';
 import { ThemeToggle } from './ThemeToggle';
 
 interface HeaderProps {
@@ -27,7 +27,8 @@ interface HeaderProps {
   onOpenReportsModal: () => void;
   onOpenCommandPalette?: () => void;
   onOpenShortcutsModal?: () => void;
-  onSwitchOwner?: (ownerId: string) => void;
+  onLogout?: () => void;
+  onNavigateTab?: (tab: string) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -38,28 +39,31 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenReportsModal,
   onOpenCommandPalette,
   onOpenShortcutsModal,
-  onSwitchOwner
+  onLogout,
+  onNavigateTab
 }) => {
   const isSaaS = owner.planType === 'SaaS';
 
   const getTabLabel = (tab: string) => {
     switch (tab) {
       case 'overview':
-        return { title: 'Mission Control', category: 'Operations', icon: LayoutDashboard };
+        return { title: 'Overview', category: 'Operations', icon: LayoutDashboard };
       case 'fleet':
-        return { title: 'Fleet & Maintenance', category: 'Operations', icon: Bus };
+        return { title: 'Fleet', category: 'Operations', icon: Bus };
       case 'drivers':
-        return { title: 'Drivers & Roster', category: 'Operations', icon: UserCheck };
+        return { title: 'Drivers', category: 'Operations', icon: UserCheck };
       case 'fares':
-        return { title: 'Routes & Dynamic Fares', category: 'Operations', icon: Ticket };
+        return { title: 'Routes', category: 'Operations', icon: Ticket };
       case 'earnings':
-        return { title: 'Revenue & Settlements', category: 'Commercials', icon: Wallet };
+        return { title: 'Earnings', category: 'Commercials', icon: Wallet };
       case 'lease':
-        return { title: 'Lease Contract & Payouts', category: 'Commercials', icon: FileText };
+        return { title: 'Lease & Payouts', category: 'Commercials', icon: FileText };
       case 'fuel-perks':
-        return { title: 'Fuel & Fastag Perks', category: 'Partner Services', icon: Fuel };
+        return { title: 'Fuel Perks', category: 'Services', icon: Fuel };
+      case 'settings':
+        return { title: 'Settings', category: 'Preferences', icon: Settings };
       default:
-        return { title: 'Dashboard', category: 'Console', icon: LayoutDashboard };
+        return { title: 'Overview', category: 'Console', icon: LayoutDashboard };
     }
   };
 
@@ -91,9 +95,18 @@ export const Header: React.FC<HeaderProps> = ({
                 <span>/</span>
                 <span className="text-slate-600 dark:text-neutral-400 font-medium">{tabInfo.category}</span>
               </div>
-              <h1 className="text-base sm:text-lg font-bold text-slate-900 dark:text-neutral-100 tracking-tight leading-none mt-0.5 font-sans">
-                {tabInfo.title}
-              </h1>
+              <div className="flex items-center space-x-2 mt-0.5">
+                <h1 className="text-base sm:text-lg font-bold text-slate-900 dark:text-neutral-100 tracking-tight leading-none font-sans">
+                  {tabInfo.title}
+                </h1>
+                <span className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded-md border ${
+                  isSaaS 
+                    ? 'bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/20' 
+                    : 'bg-teal-500/10 text-teal-800 dark:text-teal-300 border-teal-500/20'
+                }`}>
+                  {owner.planType} Plan
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -151,32 +164,22 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="lg:hidden">PDF</span>
           </button>
 
-          {/* Demo Operator Switcher (Toggle SaaS vs Lease) */}
-          {onSwitchOwner && (
-            <button
-              onClick={() => {
-                const targetId = owner.id === DEMO_SaaS_UID ? DEMO_LEASE_UID : DEMO_SaaS_UID;
-                onSwitchOwner(targetId);
-              }}
-              className={`flex items-center space-x-1.5 px-2.5 py-1.5 text-xs font-mono rounded-lg border transition-colors cursor-pointer shadow-2xs ${
-                isSaaS
-                  ? 'bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 text-amber-800 dark:text-amber-300'
-                  : 'bg-teal-500/10 hover:bg-teal-500/20 border-teal-500/30 text-teal-800 dark:text-teal-300'
-              }`}
-              title="Click to switch between SaaS and Fleet Lease demo accounts"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span className="font-bold hidden sm:inline">
-                {isSaaS ? 'SaaS Mode' : 'Lease Mode'}
-              </span>
-              <span className="text-[10px] text-slate-500 dark:text-neutral-400 font-normal hidden xl:inline">
-                (Switch)
-              </span>
-            </button>
-          )}
-
           {/* Theme Toggle Button */}
           <ThemeToggle />
+
+          {/* Settings & Account Configuration */}
+          <button
+            onClick={() => onNavigateTab ? onNavigateTab('settings') : onOpenProfileModal()}
+            className={`p-2 bg-white dark:bg-neutral-900 border rounded-lg transition-colors cursor-pointer shadow-2xs ${
+              activeTab === 'settings'
+                ? 'text-amber-600 dark:text-amber-400 border-amber-500/60 bg-amber-50 dark:bg-neutral-800'
+                : 'border-slate-200 dark:border-neutral-800 text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-neutral-100 hover:bg-slate-100 dark:hover:bg-neutral-800'
+            }`}
+            title="Account & Fleet Settings"
+            aria-label="Settings"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
 
           {/* Keyboard Shortcuts Helper */}
           {onOpenShortcutsModal && (
@@ -187,6 +190,19 @@ export const Header: React.FC<HeaderProps> = ({
               aria-label="Keyboard Shortcuts"
             >
               <Keyboard className="w-4 h-4" />
+            </button>
+          )}
+
+          {/* Sign Out Button */}
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="p-2 bg-white dark:bg-neutral-900 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-500 hover:text-rose-600 dark:text-neutral-400 dark:hover:text-rose-400 border border-slate-200 dark:border-neutral-800 hover:border-rose-300 dark:hover:border-rose-800 rounded-lg transition-colors cursor-pointer shadow-2xs flex items-center space-x-1 text-xs font-mono"
+              title="Sign Out"
+              aria-label="Sign Out"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="hidden xl:inline text-[11px] font-semibold">Exit</span>
             </button>
           )}
         </div>

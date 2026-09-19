@@ -164,13 +164,13 @@ export const FaresRoutesView: React.FC<FaresRoutesViewProps> = ({ owner }) => {
         <div>
           <div className="flex items-center space-x-2 text-xs font-mono text-amber-700 dark:text-amber-400 uppercase tracking-widest mb-1.5 font-bold">
             <Ticket className="w-3.5 h-3.5" />
-            <span>SaaS Dynamic Fare Engine & Permit Governance</span>
+            <span>Fares & Routes</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-neutral-100 tracking-tight font-sans">
             Fares & Routes Management
           </h2>
           <p className="text-xs text-slate-500 dark:text-neutral-400 font-sans mt-0.5 max-w-2xl">
-            Configure routes with statutory permit safeguards. Stage Carriage fares are mandated by the State Transport Authority (STA), while Contract & Tourist permits support operator dynamic pricing.
+            Stage Carriage fares are set by STA. Contract & Tourist permits support custom pricing.
           </p>
         </div>
 
@@ -179,7 +179,7 @@ export const FaresRoutesView: React.FC<FaresRoutesViewProps> = ({ owner }) => {
           className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-mono font-bold text-xs uppercase tracking-wider rounded-lg transition-colors flex items-center space-x-2 self-start sm:self-auto cursor-pointer shadow-2xs"
         >
           <Plus className="w-4 h-4" />
-          <span>Add New Route</span>
+          <span>Add Route</span>
         </button>
       </div>
 
@@ -194,7 +194,7 @@ export const FaresRoutesView: React.FC<FaresRoutesViewProps> = ({ owner }) => {
               Regulatory Safeguard Active
             </h4>
             <p className="text-slate-600 dark:text-neutral-400 mt-0.5 leading-relaxed font-sans">
-              This safeguard stops Tranzit from quietly treating every route as operator-priced. Stage Carriage fares are read-only per STA notification; new routes default to <strong>Unverified</strong> until confirmed.
+              Stage Carriage fares are mandated by STA. Contract and Tourist routes support operator pricing.
             </p>
           </div>
         </div>
@@ -202,7 +202,7 @@ export const FaresRoutesView: React.FC<FaresRoutesViewProps> = ({ owner }) => {
         {unverifiedCount > 0 && (
           <div className="flex items-center space-x-2 self-stretch sm:self-auto bg-amber-500/20 text-amber-900 dark:text-amber-300 px-3 py-1.5 rounded-lg border border-amber-500/30 text-[11px] font-mono font-bold whitespace-nowrap">
             <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 animate-pulse" />
-            <span>{unverifiedCount} Unverified Route{unverifiedCount > 1 ? 's' : ''} Need Confirmation</span>
+            <span>{unverifiedCount} unconfirmed route{unverifiedCount > 1 ? 's' : ''}</span>
           </div>
         )}
       </div>
@@ -843,7 +843,7 @@ export const FaresRoutesView: React.FC<FaresRoutesViewProps> = ({ owner }) => {
                   className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-mono uppercase font-bold rounded-lg transition-colors flex items-center space-x-1.5 cursor-pointer shadow-xs"
                 >
                   <Check className="w-4 h-4" />
-                  <span>{editingRoute ? 'Update Route' : 'Save Route to Firestore'}</span>
+                  <span>{editingRoute ? 'Update Route' : 'Save Route'}</span>
                 </button>
               </div>
             </form>
