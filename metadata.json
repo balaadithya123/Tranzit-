@@ -1,0 +1,6 @@
+{
+  "name": "Tranzit",
+  "description": "An operations platform for private bus owners in India with SaaS subscription and fleet Lease models.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
