@@ -79,7 +79,7 @@ export const Header: React.FC<HeaderProps> = ({
                 onClick={() => onNavigateTab && onNavigateTab(tab.id)}
                 className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
                   isActive
-                    ? 'bg-blue-600 text-white shadow-xs font-semibold'
+                    ? 'bg-violet-600 text-white shadow-xs font-semibold'
                     : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
@@ -111,7 +111,7 @@ export const Header: React.FC<HeaderProps> = ({
             aria-label="Notifications"
           >
             <Bell className="w-4 h-4" />
-            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-blue-500 ring-2 ring-white dark:ring-neutral-900"></span>
+            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-violet-500 ring-2 ring-white dark:ring-neutral-900"></span>
           </button>
 
           {/* User Profile Capsule */}
@@ -120,7 +120,7 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
               className="flex items-center space-x-2 pl-1 pr-2.5 py-1 bg-white dark:bg-neutral-900 hover:bg-slate-50 dark:hover:bg-neutral-800 border border-slate-200 dark:border-neutral-800 rounded-full transition-colors cursor-pointer shadow-2xs"
             >
-              <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs">
+              <div className="w-6 h-6 rounded-full bg-violet-600 text-white flex items-center justify-center font-bold text-xs">
                 {owner.name ? owner.name.charAt(0).toUpperCase() : 'P'}
               </div>
               <div className="text-left hidden sm:block">
@@ -138,7 +138,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{owner.name}</p>
                   <p className="text-[11px] font-mono text-slate-500 dark:text-neutral-400 truncate">{owner.email}</p>
                   <div className="mt-1 flex items-center gap-1.5">
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300 border border-violet-200 dark:border-violet-800">
                       {owner.planType} Plan
                     </span>
                   </div>
@@ -210,7 +210,7 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => onNavigateTab && onNavigateTab(tab.id)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer shrink-0 ${
                 isActive
-                  ? 'bg-blue-600 text-white shadow-xs'
+                  ? 'bg-violet-600 text-white shadow-xs'
                   : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-neutral-800/50'
               }`}
             >

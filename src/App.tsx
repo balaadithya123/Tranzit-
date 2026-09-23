@@ -7,11 +7,13 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { db, auth } from './lib/firebase';
 import { AuthView } from './components/AuthView';
 import { LowerNavBar } from './components/LowerNavBar';
+import { Sidebar } from './components/Sidebar';
 import { EditProfileModal } from './components/EditProfileModal';
 import { ReportsModal } from './components/ReportsModal';
 import { CommandPalette } from './components/CommandPalette';
 import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { PublicBusPortal } from './components/PublicBusPortal';
 import { getServiceStatus, getLicenseValidityInfo } from './lib/utils';
 import { formatEmailToName, DEMO_SaaS_EMAIL, DEMO_LEASE_EMAIL } from './lib/seedData';
 import { RefreshCw } from 'lucide-react';
@@ -32,6 +34,14 @@ function MainApp() {
   const [currentOwner, setCurrentOwner] = useState<OwnerProfile | null>(null);
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [initializing, setInitializing] = useState(true);
+  const [urlBusId, setUrlBusId] = useState<string | null>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('busId');
+    } catch (e) {
+      return null;
+    }
+  });
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isReportsModalOpen, setIsReportsModalOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
@@ -277,6 +287,8 @@ function MainApp() {
         } catch (e) {}
         setCurrentOwner(null);
       }
+    }, (err) => {
+      console.warn("Owner snapshot listener error:", err.message);
     });
 
     const busesQuery = query(collection(db, 'buses'), where('ownerId', '==', currentOwner.id));
@@ -284,6 +296,8 @@ function MainApp() {
       const list: Bus[] = [];
       snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() } as Bus));
       setBuses(list);
+    }, (err) => {
+      console.warn("Buses snapshot listener error:", err.message);
     });
 
     const driversQuery = query(collection(db, 'drivers'), where('ownerId', '==', currentOwner.id));
@@ -291,6 +305,8 @@ function MainApp() {
       const list: Driver[] = [];
       snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() } as Driver));
       setDrivers(list);
+    }, (err) => {
+      console.warn("Drivers snapshot listener error:", err.message);
     });
 
     const routesQuery = query(collection(db, 'routes'), where('ownerId', '==', currentOwner.id));
@@ -298,6 +314,8 @@ function MainApp() {
       const list: RouteItem[] = [];
       snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() } as RouteItem));
       setRoutes(list);
+    }, (err) => {
+      console.warn("Routes snapshot listener error:", err.message);
     });
 
     return () => {
@@ -340,12 +358,27 @@ function MainApp() {
 
   if (initializing) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#0c0e15] flex flex-col items-center justify-center p-4 transition-colors">
-        <div className="w-12 h-12 bg-slate-900 dark:bg-amber-500/20 text-white dark:text-amber-400 flex items-center justify-center font-black text-xl mb-3 rounded-2xl border border-slate-800 dark:border-amber-500/30 shadow-xs animate-pulse">
+      <div className="min-h-screen bg-slate-50 dark:bg-black flex flex-col items-center justify-center p-4 transition-colors">
+        <div className="w-12 h-12 bg-slate-900 dark:bg-violet-950/20 text-white dark:text-violet-400 flex items-center justify-center font-black text-xl mb-3 rounded-2xl border border-slate-800 dark:border-violet-500/30 shadow-xs animate-pulse">
           TZ
         </div>
-        <div className="w-5 h-5 border-2 border-slate-300 dark:border-neutral-700 border-t-blue-600 dark:border-t-amber-400 rounded-full animate-spin" />
+        <div className="w-5 h-5 border-2 border-slate-300 dark:border-neutral-700 border-t-violet-600 dark:border-t-violet-400 rounded-full animate-spin" />
       </div>
+    );
+  }
+
+  if (urlBusId) {
+    return (
+      <PublicBusPortal
+        busId={urlBusId}
+        isLoggedIn={!!currentOwner}
+        onExitPortal={() => {
+          setUrlBusId(null);
+          try {
+            window.history.replaceState({}, document.title, window.location.pathname);
+          } catch (e) {}
+        }}
+      />
     );
   }
 
@@ -365,9 +398,24 @@ function MainApp() {
   }).length;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0c0e15] text-slate-900 dark:text-neutral-100 flex flex-col font-sans transition-colors selection:bg-blue-500/20">
+    <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-neutral-100 flex flex-col lg:flex-row font-sans transition-colors selection:bg-violet-500/20">
+      
+      {/* Sidebar Navigation (Fixed on lg desktop screens) */}
+      <Sidebar
+        owner={currentOwner}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onOpenProfileModal={() => setIsEditProfileOpen(true)}
+        onOpenReportsModal={() => setIsReportsModalOpen(true)}
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+        onOpenShortcutsModal={() => setIsShortcutsOpen(true)}
+        onLogout={handleLogout}
+        maintenanceAlertsCount={maintenanceAlertsCount}
+        driverAlertsCount={driverAlertsCount}
+      />
+
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 w-full min-h-screen pb-24 sm:pb-28">
+      <div className="flex-1 flex flex-col min-w-0 w-full min-h-screen pb-24 sm:pb-28 lg:pb-12 lg:pl-64">
         <div className="w-full max-w-7xl mx-auto p-3.5 sm:p-6 lg:p-8 flex-1 flex flex-col">
           {/* Tab Module Canvas */}
           <main className="flex-1 w-full pt-1 sm:pt-2">
@@ -446,19 +494,21 @@ function MainApp() {
         </div>
       </div>
 
-      {/* Universal Lower Navigation Bar */}
-      <LowerNavBar
-        owner={currentOwner}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        onOpenProfileModal={() => setIsEditProfileOpen(true)}
-        onOpenReportsModal={() => setIsReportsModalOpen(true)}
-        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
-        onOpenShortcutsModal={() => setIsShortcutsOpen(true)}
-        onLogout={handleLogout}
-        maintenanceAlertsCount={maintenanceAlertsCount}
-        driverAlertsCount={driverAlertsCount}
-      />
+      {/* Universal Lower Navigation Bar (only visible on mobile/tablet) */}
+      <div className="lg:hidden">
+        <LowerNavBar
+          owner={currentOwner}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          onOpenProfileModal={() => setIsEditProfileOpen(true)}
+          onOpenReportsModal={() => setIsReportsModalOpen(true)}
+          onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+          onOpenShortcutsModal={() => setIsShortcutsOpen(true)}
+          onLogout={handleLogout}
+          maintenanceAlertsCount={maintenanceAlertsCount}
+          driverAlertsCount={driverAlertsCount}
+        />
+      </div>
 
       {/* Global Modals */}
       {isEditProfileOpen && (

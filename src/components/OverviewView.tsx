@@ -59,6 +59,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
       const list: Bus[] = [];
       snapshot.forEach((doc) => list.push({ id: doc.id, ...doc.data() } as Bus));
       setBuses(list);
+    }, (err) => {
+      console.warn("Overview buses listener error:", err.message);
     });
 
     const routesQuery = query(collection(db, 'routes'), where('ownerId', '==', owner.id));
@@ -66,6 +68,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
       const list: RouteItem[] = [];
       snapshot.forEach((doc) => list.push({ id: doc.id, ...doc.data() } as RouteItem));
       setRoutes(list);
+    }, (err) => {
+      console.warn("Overview routes listener error:", err.message);
     });
 
     const driversQuery = query(collection(db, 'drivers'), where('ownerId', '==', owner.id));
@@ -73,6 +77,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
       const list: Driver[] = [];
       snapshot.forEach((doc) => list.push({ id: doc.id, ...doc.data() } as Driver));
       setDrivers(list);
+    }, (err) => {
+      console.warn("Overview drivers listener error:", err.message);
     });
 
     const maintQuery = query(collection(db, 'maintenance'), where('ownerId', '==', owner.id));
@@ -80,6 +86,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
       const list: MaintenanceRecord[] = [];
       snapshot.forEach((doc) => list.push({ id: doc.id, ...doc.data() } as MaintenanceRecord));
       setMaintenance(list);
+    }, (err) => {
+      console.warn("Overview maintenance listener error:", err.message);
     });
 
     const earningsQuery = query(collection(db, 'earnings'), where('ownerId', '==', owner.id));
@@ -88,6 +96,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
       snapshot.forEach((doc) => list.push({ id: doc.id, ...doc.data() } as EarningsEntry));
       list.sort((a, b) => a.date.localeCompare(b.date));
       setEarnings(list);
+    }, (err) => {
+      console.warn("Overview earnings listener error:", err.message);
     });
 
     return () => {
@@ -181,7 +191,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
               onClick={() => onNavigateTab('fleet')}
               className="px-3 sm:px-3.5 py-1.5 sm:py-2 bg-slate-50 dark:bg-neutral-900 hover:bg-slate-100 dark:hover:bg-neutral-800 border border-slate-200 dark:border-neutral-800 text-slate-700 dark:text-neutral-200 text-xs font-mono font-bold rounded-xl transition-colors flex items-center space-x-1.5 cursor-pointer shadow-2xs whitespace-nowrap shrink-0"
             >
-              <BusIcon className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+              <BusIcon className="w-3.5 h-3.5 text-violet-600 shrink-0" />
               <span>Fleet ({totalBuses})</span>
             </button>
 
@@ -198,7 +208,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
 
             <button
               onClick={() => onNavigateTab('earnings')}
-              className="px-3.5 sm:px-4 py-1.5 sm:py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-mono font-bold rounded-xl transition-colors flex items-center space-x-1.5 cursor-pointer shadow-md shadow-blue-500/20 whitespace-nowrap shrink-0"
+              className="px-3.5 sm:px-4 py-1.5 sm:py-2 bg-violet-600 hover:bg-violet-500 text-white text-xs font-mono font-bold rounded-xl transition-colors flex items-center space-x-1.5 cursor-pointer shadow-md shadow-violet-500/20 whitespace-nowrap shrink-0"
             >
               <Wallet className="w-3.5 h-3.5 shrink-0" />
               <span>Earnings</span>
@@ -335,7 +345,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
                 value={fleetSearch}
                 onChange={(e) => setFleetSearch(e.target.value)}
                 placeholder="Search reg / model / route..."
-                className="pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-full font-mono text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
+                className="pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-full font-mono text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-violet-500"
               />
             </div>
 
@@ -345,7 +355,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
                 onClick={() => setFleetFilter(filter)}
                 className={`px-3 py-1.5 rounded-full text-xs font-mono transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                   fleetFilter === filter
-                    ? 'bg-blue-600 text-white font-bold shadow-xs'
+                    ? 'bg-violet-600 text-white font-bold shadow-xs'
                     : 'bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
@@ -377,7 +387,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ owner, onNavigateTab
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center space-x-2.5">
                         <div className="w-9 h-9 rounded-xl bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 flex items-center justify-center text-slate-700 dark:text-neutral-300 shrink-0">
-                          <BusIcon className="w-5 h-5 text-blue-600" />
+                          <BusIcon className="w-5 h-5 text-violet-600" />
                         </div>
                         <div className="min-w-0">
                           <span className="font-mono font-bold text-sm text-slate-900 dark:text-white block truncate">

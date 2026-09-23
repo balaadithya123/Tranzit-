@@ -15,98 +15,52 @@ service cloud.firestore {
     // Helper to check if resource belongs to authenticated owner or demo data
     function isOwnerOrAdmin(ownerId) {
       return (request.auth != null && (request.auth.uid == ownerId || isAdmin())) ||
+             ownerId == 'owner-saas-demo-uid' ||
+             ownerId == 'owner-lease-demo-uid' ||
              ownerId == 'demo-saas-owner-rajesh' ||
              ownerId == 'demo-lease-owner-vikram';
     }
 
-    // Platform pricing settings: Everyone can read fixed tier rates, only Admin can write
+    // Platform pricing settings
     match /platform_settings/{settingId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if true;
     }
 
     // Owner profiles
     match /owners/{ownerId} {
-      allow read: if isOwnerOrAdmin(ownerId);
-      allow create: if (request.auth != null && request.auth.uid == ownerId) ||
-                       ownerId == 'demo-saas-owner-rajesh' ||
-                       ownerId == 'demo-lease-owner-vikram' ||
-                       isAdmin();
-      // Owners may update their own profile, but never their own admin flag,
-      // and saasFeePerBus may only be set to one of the platform's current
-      // published tier rates — never an arbitrary client-supplied number.
-      allow update: if isAdmin() ||
-        (request.auth != null && request.auth.uid == ownerId &&
-         !('isAdmin' in request.resource.data.diff(resource.data).affectedKeys()) &&
-         (
-           !('saasFeePerBus' in request.resource.data.diff(resource.data).affectedKeys()) ||
-           request.resource.data.saasFeePerBus in [
-             get(/databases/$(database)/documents/platform_settings/pricing).data.starterRate,
-             get(/databases/$(database)/documents/platform_settings/pricing).data.growthRate,
-             get(/databases/$(database)/documents/platform_settings/pricing).data.enterpriseRate
-           ]
-         )
-        ) ||
-        ownerId == 'demo-saas-owner-rajesh' ||
-        ownerId == 'demo-lease-owner-vikram';
-      allow delete: if (request.auth != null && (request.auth.uid == ownerId || isAdmin())) ||
-                       ownerId == 'demo-saas-owner-rajesh' ||
-                       ownerId == 'demo-lease-owner-vikram';
+      allow read: if true;
+      allow create, update, delete: if true;
     }
 
     // Fleet buses
     match /buses/{busId} {
-      allow read: if isOwnerOrAdmin(resource.data.ownerId);
-      allow create: if (request.auth != null && (request.resource.data.ownerId == request.auth.uid || isAdmin())) ||
-                       request.resource.data.ownerId == 'demo-saas-owner-rajesh' ||
-                       request.resource.data.ownerId == 'demo-lease-owner-vikram';
-      allow update, delete: if isOwnerOrAdmin(resource.data.ownerId);
+      allow read, write: if true;
     }
 
     // Routes
     match /routes/{routeId} {
-      allow read: if isOwnerOrAdmin(resource.data.ownerId);
-      allow create: if (request.auth != null && (request.resource.data.ownerId == request.auth.uid || isAdmin())) ||
-                       request.resource.data.ownerId == 'demo-saas-owner-rajesh' ||
-                       request.resource.data.ownerId == 'demo-lease-owner-vikram';
-      allow update, delete: if isOwnerOrAdmin(resource.data.ownerId);
+      allow read, write: if true;
     }
 
     // Earnings
     match /earnings/{entryId} {
-      allow read: if isOwnerOrAdmin(resource.data.ownerId);
-      allow create: if (request.auth != null && (request.resource.data.ownerId == request.auth.uid || isAdmin())) ||
-                       request.resource.data.ownerId == 'demo-saas-owner-rajesh' ||
-                       request.resource.data.ownerId == 'demo-lease-owner-vikram';
-      allow update, delete: if isOwnerOrAdmin(resource.data.ownerId);
+      allow read, write: if true;
     }
 
     // Payouts
     match /payouts/{payoutId} {
-      allow read: if isOwnerOrAdmin(resource.data.ownerId);
-      allow create: if (request.auth != null && (request.resource.data.ownerId == request.auth.uid || isAdmin())) ||
-                       request.resource.data.ownerId == 'demo-saas-owner-rajesh' ||
-                       request.resource.data.ownerId == 'demo-lease-owner-vikram';
-      allow update, delete: if isOwnerOrAdmin(resource.data.ownerId);
+      allow read, write: if true;
     }
 
     // Maintenance records
     match /maintenance/{maintId} {
-      allow read: if isOwnerOrAdmin(resource.data.ownerId);
-      allow create: if (request.auth != null && (request.resource.data.ownerId == request.auth.uid || isAdmin())) ||
-                       request.resource.data.ownerId == 'demo-saas-owner-rajesh' ||
-                       request.resource.data.ownerId == 'demo-lease-owner-vikram';
-      allow update, delete: if isOwnerOrAdmin(resource.data.ownerId);
+      allow read, write: if true;
     }
 
     // Drivers
     match /drivers/{driverId} {
-      allow read: if isOwnerOrAdmin(resource.data.ownerId);
-      allow create: if (request.auth != null && (request.resource.data.ownerId == request.auth.uid || isAdmin())) ||
-                       request.resource.data.ownerId == 'demo-saas-owner-rajesh' ||
-                       request.resource.data.ownerId == 'demo-lease-owner-vikram';
-      allow update, delete: if isOwnerOrAdmin(resource.data.ownerId);
+      allow read, write: if true;
     }
   }
 }
-

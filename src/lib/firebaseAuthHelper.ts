@@ -3,7 +3,8 @@ import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
-  signInWithCredential
+  signInWithCredential,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import { auth, db } from './firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -259,4 +260,9 @@ export async function loginWithGoogleFallback(options?: {
     }
     throw new Error(gErr.message || "Failed to sign in with Google. Please try again or use email sign-in.");
   }
+}
+
+export async function sendResetPassword(email: string): Promise<void> {
+  const cleanEmail = email.trim().toLowerCase();
+  await sendPasswordResetEmail(auth, cleanEmail);
 }

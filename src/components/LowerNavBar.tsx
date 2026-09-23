@@ -243,10 +243,10 @@ export const LowerNavBar: React.FC<LowerNavBarProps> = ({
         {/* ========================================================= */}
         {/* DESKTOP / TABLET DOCK (sm:flex)                           */}
         {/* ========================================================= */}
-        <div className="hidden sm:flex pointer-events-auto items-center space-x-1 px-2.5 py-1.5 bg-white/95 dark:bg-[#10131a]/95 backdrop-blur-xl border border-slate-200/90 dark:border-neutral-800/90 rounded-full shadow-2xl transition-all">
+        <div className="hidden sm:flex pointer-events-auto items-center space-x-1 px-4 py-2 bg-white/95 dark:bg-[#10131a]/95 backdrop-blur-xl border border-slate-200/90 dark:border-neutral-800/90 rounded-full shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] dark:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.6)] ring-1 ring-black/5 dark:ring-white/10 transition-all">
           
           {/* Nav Pills */}
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center space-x-1.5">
             {navTabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -255,17 +255,17 @@ export const LowerNavBar: React.FC<LowerNavBarProps> = ({
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`relative flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
+                  className={`relative flex items-center space-x-2 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer whitespace-nowrap overflow-hidden group ${
                     isActive
-                      ? 'bg-blue-600 text-white shadow-xs font-semibold'
-                      : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-neutral-800/80'
+                      ? 'bg-slate-900 text-white dark:bg-neutral-100 dark:text-neutral-950 font-bold shadow-md shadow-slate-900/10 dark:shadow-neutral-100/10 scale-105'
+                      : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-neutral-800'
                   }`}
                 >
-                  <Icon className="w-3.5 h-3.5 shrink-0" />
-                  <span>{tab.label}</span>
+                  <Icon className={`w-4 h-4 shrink-0 transition-transform duration-200 group-hover:scale-110 ${isActive ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
+                  <span className="tracking-tight">{tab.label}</span>
                   {tab.badge > 0 && (
-                    <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold ${
-                      isActive ? 'bg-white text-blue-600' : 'bg-rose-500 text-white'
+                    <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold ${
+                      isActive ? 'bg-blue-600 text-white dark:bg-blue-600 dark:text-white' : 'bg-rose-500 text-white'
                     }`}>
                       {tab.badge}
                     </span>
@@ -275,19 +275,19 @@ export const LowerNavBar: React.FC<LowerNavBarProps> = ({
             })}
           </div>
 
-          <div className="w-px h-5 bg-slate-200 dark:border-neutral-800 mx-0.5" />
+          <div className="w-px h-6 bg-slate-200 dark:bg-neutral-800 mx-2" />
 
           {/* Quick Utility Icons */}
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center space-x-1.5">
             {onOpenCommandPalette && (
               <button
                 type="button"
                 onClick={onOpenCommandPalette}
-                className="p-2 rounded-full text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                className="p-2.5 rounded-full text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-neutral-800 transition-all hover:scale-105 cursor-pointer"
                 title="Search (⌘K)"
                 aria-label="Search"
               >
-                <Search className="w-3.5 h-3.5" />
+                <Search className="w-4 h-4" />
               </button>
             )}
 
@@ -295,12 +295,12 @@ export const LowerNavBar: React.FC<LowerNavBarProps> = ({
               <button
                 type="button"
                 onClick={onOpenReportsModal}
-                className="relative p-2 rounded-full text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                className="relative p-2.5 rounded-full text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-neutral-800 transition-all hover:scale-105 cursor-pointer"
                 title="Reports & Alerts"
                 aria-label="Reports"
               >
-                <Bell className="w-3.5 h-3.5" />
-                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-blue-500 ring-2 ring-white dark:ring-neutral-900" />
+                <Bell className="w-4 h-4" />
+                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-blue-500 ring-2 ring-white dark:ring-neutral-900" />
               </button>
             )}
 
@@ -309,14 +309,14 @@ export const LowerNavBar: React.FC<LowerNavBarProps> = ({
               <button
                 type="button"
                 onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all shadow-2xs"
+                className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs cursor-pointer hover:ring-4 hover:ring-blue-500/20 active:scale-95 transition-all shadow-md"
                 title="Account Menu"
               >
                 {owner.name ? owner.name.charAt(0).toUpperCase() : 'T'}
               </button>
 
               {isProfileMenuOpen && (
-                <div className="absolute right-0 bottom-10 w-52 bg-white dark:bg-[#10131a] border border-slate-200 dark:border-neutral-800 rounded-2xl shadow-2xl z-50 p-2 font-mono text-xs animate-in fade-in zoom-in-95">
+                <div className="absolute right-0 bottom-12 w-52 bg-white dark:bg-[#10131a] border border-slate-200 dark:border-neutral-800 rounded-2xl shadow-2xl z-50 p-2 font-mono text-xs animate-in fade-in zoom-in-95">
                   <div className="px-3 py-2 border-b border-slate-100 dark:border-neutral-800 mb-1">
                     <p className="text-xs font-bold text-slate-900 dark:text-white truncate font-sans">{owner.name}</p>
                     <p className="text-[10px] text-slate-500 dark:text-neutral-400 truncate">{owner.email}</p>
@@ -384,9 +384,9 @@ export const LowerNavBar: React.FC<LowerNavBarProps> = ({
         </div>
 
         {/* ========================================================= */}
-        {/* MOBILE FULL-WIDTH LOWER BAR (< sm)                       */}
+        {/* MOBILE FLOATING NAV ISLAND (< sm)                         */}
         {/* ========================================================= */}
-        <div className="sm:hidden pointer-events-auto w-full bg-white/95 dark:bg-[#0c0e15]/95 backdrop-blur-md border-t border-slate-200 dark:border-neutral-800 px-1 py-1.5 shadow-2xl safe-area-bottom">
+        <div className="sm:hidden pointer-events-auto w-[calc(100%-24px)] mx-3 mb-3 bg-white/95 dark:bg-[#0c0e15]/95 backdrop-blur-xl border border-slate-200/60 dark:border-neutral-800/60 px-1.5 py-1 shadow-2xl rounded-2xl safe-area-bottom">
           <div className="flex items-center justify-around">
             {/* Top 5 core tabs */}
             {navTabs.slice(0, 5).map((item) => {

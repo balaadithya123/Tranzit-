@@ -349,6 +349,91 @@ ${JSON.stringify(fleetSummary, null, 2)}`;
     }
   });
 
+  // Email OTP Delivery API with Resend Integration & Sandbox Fallback
+  app.post("/api/send-email-otp", async (req, res) => {
+    try {
+      const { email, code } = req.body;
+      if (!email || !code) {
+        return res.status(400).json({ error: "Email address and 6-digit code are required." });
+      }
+
+      const cleanEmail = String(email).trim().toLowerCase();
+      const resendApiKey = process.env.RESEND_API_KEY;
+      
+      // Resend strictly requires a verified domain or its official test sender "onboarding@resend.dev".
+      // Public email domains (@gmail.com, @yahoo.com, etc.) in the 'from' field are rejected by Resend.
+      let fromEmail = process.env.RESEND_FROM_EMAIL || "Tranzit Fleet <onboarding@resend.dev>";
+      const isPublicWebmail = /@(gmail\.com|yahoo\.com|hotmail\.com|outlook\.com|icloud\.com|aol\.com|live\.com)/i.test(fromEmail);
+      if (isPublicWebmail) {
+        console.warn(`⚠️ [Resend Notice] Configured RESEND_FROM_EMAIL "${fromEmail}" is a public provider (@gmail.com etc). Falling back to "Tranzit Fleet <onboarding@resend.dev>" to comply with Resend DMARC/SPF requirements.`);
+        fromEmail = "Tranzit Fleet <onboarding@resend.dev>";
+      }
+
+      let delivered = false;
+      let serviceUsed = "Sandbox Mode";
+      let resendError: string | null = null;
+
+      // If Resend API Key is configured in environment, dispatch real transactional email
+      if (resendApiKey) {
+        try {
+          const response = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${resendApiKey.trim()}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              from: fromEmail,
+              to: [cleanEmail],
+              subject: `Your Tranzit Login Verification Code: ${code}`,
+              html: `
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 28px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff; color: #0f172a;">
+                  <div style="display: flex; align-items: center; margin-bottom: 20px;">
+                    <span style="font-weight: 900; font-size: 22px; color: #7c3aed; letter-spacing: -0.5px;">Tranzit</span>
+                    <span style="margin-left: 8px; font-size: 11px; background: #ede9fe; color: #6d28d9; padding: 2px 8px; border-radius: 6px; font-weight: 700; text-transform: uppercase;">Fleet OS</span>
+                  </div>
+                  <h3 style="font-size: 18px; font-weight: 700; margin-top: 0; color: #0f172a;">Operator Login Verification</h3>
+                  <p style="font-size: 14px; line-height: 1.5; color: #475569;">Use the secure 6-digit verification code below to authenticate your carrier session:</p>
+                  <div style="background-color: #f8fafc; border: 2px dashed #cbd5e1; padding: 18px; border-radius: 12px; text-align: center; margin: 24px 0;">
+                    <span style="font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #7c3aed; font-family: monospace;">${code}</span>
+                  </div>
+                  <p style="font-size: 12px; color: #64748b; line-height: 1.5;">This verification code is valid for 10 minutes. If you did not request this login code, you can safely disregard this email.</p>
+                  <hr style="border: none; border-top: 1px solid #f1f5f9; margin: 24px 0;" />
+                  <p style="font-size: 11px; color: #94a3b8; text-align: center; margin: 0;">Tranzit Fleet Management Platform • High-Frequency Carrier Operations</p>
+                </div>
+              `
+            })
+          });
+
+          const resData: any = await response.json();
+          if (response.ok) {
+            delivered = true;
+            serviceUsed = "Resend";
+            console.log(`✉️ [Resend Mail] Successfully dispatched verification code to ${cleanEmail} (ID: ${resData?.id || 'ok'})`);
+          } else {
+            resendError = resData?.message || resData?.error || `Resend Error (${response.status})`;
+            console.warn(`⚠️ [Resend Mail Warning] Resend returned status ${response.status}:`, resData);
+          }
+        } catch (mailErr: any) {
+          resendError = mailErr?.message || "Failed to contact Resend API.";
+          console.warn("⚠️ [Resend Mail Error]:", resendError);
+        }
+      }
+
+      console.log(`🔑 [Tranzit Auth] Verification code generated for ${cleanEmail} (Method: ${serviceUsed}, Delivered: ${delivered})`);
+
+      return res.json({
+        success: true,
+        delivered,
+        serviceUsed,
+        resendError
+      });
+    } catch (err: any) {
+      console.error("Failed to process email OTP request:", err);
+      return res.status(500).json({ error: "Failed to process email OTP." });
+    }
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

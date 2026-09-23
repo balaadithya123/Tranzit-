@@ -81,7 +81,7 @@ export const LeaseTermsPayoutsView: React.FC<LeaseTermsPayoutsViewProps> = ({ ow
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-sans tracking-tight">
               Lease Terms & Monthly Guarantee
             </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-400 border border-violet-200 dark:border-violet-800">
               Contract Active
             </span>
           </div>
@@ -93,7 +93,7 @@ export const LeaseTermsPayoutsView: React.FC<LeaseTermsPayoutsViewProps> = ({ ow
         <div className="flex items-center space-x-2.5 self-start md:self-auto">
           <button
             onClick={() => setIsPayoutModalOpen(true)}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-mono font-bold rounded-xl transition-colors flex items-center space-x-1.5 cursor-pointer shadow-md shadow-blue-500/20"
+            className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-xs font-mono font-bold rounded-xl transition-colors flex items-center space-x-1.5 cursor-pointer shadow-md shadow-violet-500/20"
           >
             <Plus className="w-4 h-4" />
             <span>Record Payout</span>
@@ -124,10 +124,10 @@ export const LeaseTermsPayoutsView: React.FC<LeaseTermsPayoutsViewProps> = ({ ow
       </div>
 
       {/* SECTION 3: LEASED CONTRACTS TABLE */}
-      <div className="bg-white dark:bg-[#10131a] border border-slate-200/90 dark:border-neutral-800/80 rounded-2xl p-4 sm:p-5 shadow-2xs space-y-4">
+      <div className="bg-white dark:bg-neutral-950 border border-slate-200/90 dark:border-neutral-850 rounded-2xl p-4 sm:p-5 shadow-2xs space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-neutral-800">
           <div className="flex items-center space-x-2">
-            <ShieldCheck className="w-4 h-4 text-blue-600" />
+            <ShieldCheck className="w-4 h-4 text-violet-600" />
             <h3 className="font-bold text-sm text-slate-900 dark:text-white font-sans">
               Leased Fleet Contracts ({buses.length})
             </h3>
@@ -168,7 +168,7 @@ export const LeaseTermsPayoutsView: React.FC<LeaseTermsPayoutsViewProps> = ({ ow
                     <td className="py-3.5 px-4 font-mono text-slate-600 dark:text-neutral-400">
                       {bus.capacity} Seats
                     </td>
-                    <td className="py-3.5 px-4 font-mono font-bold text-blue-600 dark:text-blue-400 text-sm">
+                    <td className="py-3.5 px-4 font-mono font-bold text-violet-600 dark:text-violet-400 text-sm">
                       {formatINR(bus.leaseValue || 0)} / mo
                     </td>
                     <td className="py-3.5 px-4 font-mono text-slate-600 dark:text-neutral-400">
@@ -188,10 +188,10 @@ export const LeaseTermsPayoutsView: React.FC<LeaseTermsPayoutsViewProps> = ({ ow
       </div>
 
       {/* SECTION 4: PAYOUT HISTORY */}
-      <div className="bg-white dark:bg-[#10131a] border border-slate-200/90 dark:border-neutral-800/80 rounded-2xl p-4 sm:p-5 shadow-2xs space-y-4">
+      <div className="bg-white dark:bg-neutral-950 border border-slate-200/90 dark:border-neutral-850 rounded-2xl p-4 sm:p-5 shadow-2xs space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-neutral-800">
           <div className="flex items-center space-x-2">
-            <Clock className="w-4 h-4 text-blue-600" />
+            <Clock className="w-4 h-4 text-violet-600" />
             <h3 className="font-bold text-sm text-slate-900 dark:text-white font-sans">
               Payout History & Scheduled Transfers
             </h3>
@@ -216,14 +216,14 @@ export const LeaseTermsPayoutsView: React.FC<LeaseTermsPayoutsViewProps> = ({ ow
                   <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
                     {p.date}
                   </td>
-                  <td className="py-3.5 px-4 font-bold text-blue-600 dark:text-blue-400 text-sm">
+                  <td className="py-3.5 px-4 font-bold text-violet-600 dark:text-violet-400 text-sm">
                     {formatINR(p.amount)}
                   </td>
                   <td className="py-3.5 px-4">
                     <span className={`px-2.5 py-0.5 text-[10px] font-bold uppercase rounded-full border inline-flex items-center space-x-1 ${
                       p.status === 'Paid'
                         ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
-                        : 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 border-blue-200 dark:border-blue-800'
+                        : 'bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-400 border-violet-200 dark:border-violet-800'
                     }`}>
                       {p.status === 'Paid' ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
                       <span>{p.status}</span>
@@ -269,7 +269,7 @@ export const LeaseTermsPayoutsView: React.FC<LeaseTermsPayoutsViewProps> = ({ ow
                   required
                   value={payoutDate}
                   onChange={(e) => setPayoutDate(e.target.value)}
-                  className="w-full px-3 py-2 text-xs font-mono border border-slate-200 dark:border-neutral-800 rounded-xl bg-slate-50 dark:bg-neutral-900 text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2 text-xs font-mono border border-slate-200 dark:border-neutral-800 rounded-xl bg-slate-50 dark:bg-neutral-900 text-slate-900 dark:text-white focus:outline-none focus:border-violet-500"
                 />
               </div>
 
@@ -283,7 +283,7 @@ export const LeaseTermsPayoutsView: React.FC<LeaseTermsPayoutsViewProps> = ({ ow
                   min={1000}
                   value={payoutAmount}
                   onChange={(e) => setPayoutAmount(Number(e.target.value))}
-                  className="w-full px-3 py-2 text-xs font-mono border border-slate-200 dark:border-neutral-800 rounded-xl bg-slate-50 dark:bg-neutral-900 text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2 text-xs font-mono border border-slate-200 dark:border-neutral-800 rounded-xl bg-slate-50 dark:bg-neutral-900 text-slate-900 dark:text-white focus:outline-none focus:border-violet-500"
                 />
               </div>
 
@@ -294,7 +294,7 @@ export const LeaseTermsPayoutsView: React.FC<LeaseTermsPayoutsViewProps> = ({ ow
                 <select
                   value={payoutStatus}
                   onChange={(e) => setPayoutStatus(e.target.value as any)}
-                  className="w-full px-3 py-2 text-xs font-mono border border-slate-200 dark:border-neutral-800 rounded-xl bg-slate-50 dark:bg-neutral-900 text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 cursor-pointer"
+                  className="w-full px-3 py-2 text-xs font-mono border border-slate-200 dark:border-neutral-800 rounded-xl bg-slate-50 dark:bg-neutral-900 text-slate-900 dark:text-white focus:outline-none focus:border-violet-500 cursor-pointer"
                 >
                   <option value="Scheduled">Scheduled</option>
                   <option value="Processing">Processing</option>
@@ -312,7 +312,7 @@ export const LeaseTermsPayoutsView: React.FC<LeaseTermsPayoutsViewProps> = ({ ow
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-mono font-bold rounded-xl cursor-pointer shadow-md shadow-blue-500/20"
+                  className="px-5 py-2 bg-violet-600 hover:bg-violet-500 text-white text-xs font-mono font-bold rounded-xl cursor-pointer shadow-md shadow-violet-500/20"
                 >
                   Save Record
                 </button>

@@ -6,6 +6,7 @@ import { getServiceStatus, formatINR, downloadCSV } from '../lib/utils';
 import { CopyButton } from './CopyButton';
 import { StatCard } from './StatCard';
 import { ReportsModal } from './ReportsModal';
+import { MaintenanceRoadmapChart } from './MaintenanceRoadmapChart';
 import {
   Wrench,
   Calendar,
@@ -24,7 +25,10 @@ import {
   Activity,
   ShieldCheck,
   History,
-  ChevronDown // Add ChevronDown for dropdown
+  ChevronDown, // Add ChevronDown for dropdown
+  QrCode,
+  Printer,
+  ExternalLink
 } from 'lucide-react';
 
 interface FleetMaintenanceViewProps {
@@ -42,6 +46,27 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [isReportsModalOpen, setIsReportsModalOpen] = useState(false);
+
+  // Bus QR state
+  const [qrBus, setQrBus] = useState<Bus | null>(null);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [scannerView, setScannerView] = useState<'camera' | 'select'>('camera');
+  const [cameraScanning, setCameraScanning] = useState(false);
+  const [scannedResult, setScannedResult] = useState<Bus | null>(null);
+
+  // Deep link detection for scanned QR code (?busId=...)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlBusId = params.get('busId');
+    if (urlBusId && buses.length > 0) {
+      const found = buses.find(b => b.id === urlBusId);
+      if (found) {
+        setQrBus(found);
+        // Clean URL to prevent popup repeating on refresh
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+  }, [buses]);
 
   useEffect(() => {
     setActiveSubTab(initialTab);
@@ -72,7 +97,7 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
 
   // Lock body scroll when any modal is open
   useEffect(() => {
-    if (isLogModalOpen || isAddBusModalOpen) {
+    if (isLogModalOpen || isAddBusModalOpen || qrBus || isScannerOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
@@ -80,7 +105,7 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [isLogModalOpen, isAddBusModalOpen]);
+  }, [isLogModalOpen, isAddBusModalOpen, qrBus, isScannerOpen]);
 
   // Subscribe to buses and maintenance records in Firestore
   useEffect(() => {
@@ -135,6 +160,147 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
       unsubRoutes();
     };
   }, [owner.id]);
+
+  const handlePrintQR = (bus: Bus) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const qrUrl = `${window.location.origin}?busId=${bus.id}`;
+    const qrImgSrc = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrUrl)}`;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Tranzit QR Decal - ${bus.regNumber}</title>
+          <style>
+            body {
+              font-family: monospace;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              height: 100vh;
+              margin: 0;
+              text-align: center;
+              background-color: #ffffff;
+              color: #000000;
+            }
+            .card {
+              border: 5px double #000;
+              padding: 40px;
+              border-radius: 20px;
+              max-width: 420px;
+              box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            }
+            .header-title {
+              font-size: 26px;
+              font-weight: 900;
+              margin: 0 0 5px 0;
+              letter-spacing: -1.5px;
+            }
+            .header-subtitle {
+              font-size: 10px;
+              font-weight: bold;
+              text-transform: uppercase;
+              color: #666;
+              letter-spacing: 2px;
+              margin-bottom: 25px;
+            }
+            .qr-container {
+              padding: 15px;
+              background: white;
+              border: 1px solid #ddd;
+              border-radius: 12px;
+              display: inline-block;
+              margin-bottom: 20px;
+            }
+            .qr-image {
+              width: 240px;
+              height: 240px;
+              display: block;
+            }
+            .reg-badge {
+              font-size: 28px;
+              font-weight: 900;
+              background: #f1f5f9;
+              border: 3px solid #000000;
+              padding: 10px 24px;
+              border-radius: 12px;
+              letter-spacing: 1px;
+              display: inline-block;
+              margin-bottom: 20px;
+              font-family: monospace;
+            }
+            .meta-grid {
+              text-align: left;
+              width: 100%;
+              max-width: 320px;
+              margin: 0 auto;
+              font-size: 13px;
+              line-height: 1.6;
+              border-top: 1px dashed #ccc;
+              padding-top: 15px;
+            }
+            .meta-row {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 4px;
+            }
+            .meta-label {
+              font-weight: bold;
+              color: #666;
+            }
+            .meta-val {
+              font-weight: bold;
+            }
+            .footer-msg {
+              font-size: 10px;
+              color: #888;
+              margin-top: 25px;
+              font-weight: bold;
+              letter-spacing: 0.5px;
+            }
+          </style>
+        </head>
+        <body onload="window.print(); window.close();">
+          <div class="card">
+            <h1 class="header-title">TRANZIT FLEET OS</h1>
+            <div class="header-subtitle">Official Vehicle QR Decal</div>
+            
+            <div class="reg-badge">${bus.regNumber}</div>
+            
+            <div>
+              <div class="qr-container">
+                <img class="qr-image" src="${qrImgSrc}" alt="QR Decal" />
+              </div>
+            </div>
+            
+            <div class="meta-grid">
+              <div class="meta-row">
+                <span class="meta-label">VEHICLE MODEL:</span>
+                <span class="meta-val">${bus.model}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">PILOT ASSIGNED:</span>
+                <span class="meta-val">${bus.driverName || 'N/A'}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">CORRIDOR:</span>
+                <span class="meta-val">${bus.routeAssigned || 'Unassigned'}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">FITNESS EXPIRE:</span>
+                <span class="meta-val">${bus.nextServiceDue}</span>
+              </div>
+            </div>
+            
+            <div class="footer-msg">SCAN PASSPORT TO RETRIEVE COMPLETE WORKSHOP HISTORY</div>
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
   const handleExportCSV = () => {
     const headers = [
@@ -327,6 +493,22 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
             <span>PDF Report</span>
           </button>
 
+          <button
+            onClick={() => {
+              setIsScannerOpen(true);
+              setScannerView('camera');
+              setCameraScanning(false);
+              setScannedResult(null);
+            }}
+            className="md:hidden px-3 py-2 bg-white dark:bg-neutral-900 hover:bg-slate-50 dark:hover:bg-neutral-800 border border-slate-200 dark:border-neutral-800 text-slate-700 dark:text-neutral-200 text-xs font-mono font-bold rounded-xl transition-colors flex items-center space-x-1.5 cursor-pointer shadow-2xs whitespace-nowrap shrink-0"
+            title="Scan Bus QR Decal"
+          >
+            <QrCode className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+            <span>Scan QR Decal</span>
+          </button>
+
+
+
           {activeSubTab === 'service' ? (
             <button
               onClick={() => handleOpenLogModal()}
@@ -459,6 +641,9 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
         </div>
       )}
 
+      {/* D3 Roadmap Visual Module */}
+      <MaintenanceRoadmapChart buses={buses} />
+
       {/* SECTION 3: VEHICLE FLEET TABLE */}
       <div className="bg-white dark:bg-[#10131a] border border-slate-200/90 dark:border-neutral-800/80 rounded-2xl p-4 sm:p-5 shadow-2xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -560,6 +745,15 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
 
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end space-x-1.5 font-mono">
+                          <button
+                            onClick={() => setQrBus(bus)}
+                            className="px-2.5 py-1 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 text-[11px] font-bold rounded-lg transition-colors flex items-center space-x-1 cursor-pointer"
+                            title="View/Print QR Decal Passport"
+                          >
+                            <QrCode className="w-3 h-3 text-blue-600" />
+                            <span>QR Decal</span>
+                          </button>
+
                           <button
                             onClick={() => handleOpenLogModal(bus)}
                             className="px-2.5 py-1 bg-slate-100 dark:bg-neutral-800 hover:bg-slate-200 dark:hover:bg-neutral-700 text-blue-600 dark:text-blue-400 text-[11px] font-bold rounded-lg transition-colors flex items-center space-x-1 cursor-pointer"
@@ -910,6 +1104,360 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({ owne
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* BUS QR PASSPORT MODAL */}
+      {qrBus && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-[#10131a] border border-slate-200/90 dark:border-neutral-800/80 max-w-2xl w-full p-5 sm:p-6 rounded-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-150 text-slate-900 dark:text-white my-8">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3.5 border-b border-slate-200 dark:border-neutral-800 mb-4">
+              <div className="flex items-center space-x-2.5">
+                <div className="p-2 bg-blue-50 dark:bg-blue-950/40 text-blue-600 rounded-xl">
+                  <QrCode className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white font-sans">
+                    Vehicle QR Decal & Fitness Passport
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-neutral-400 font-mono">
+                    Official inspection sheet for {qrBus.regNumber}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setQrBus(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-800 dark:hover:text-white rounded-xl cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content Body */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+              
+              {/* Left Column: QR Code Visualizer */}
+              <div className="md:col-span-5 flex flex-col items-center justify-center p-4 bg-slate-50 dark:bg-neutral-900/40 border border-slate-200/60 dark:border-neutral-800/60 rounded-xl text-center">
+                <div className="bg-white p-3.5 rounded-2xl shadow-xs border border-slate-200/60 dark:border-neutral-800">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`${window.location.origin}?busId=${qrBus.id}`)}`}
+                    alt={`QR Code Decal for ${qrBus.regNumber}`}
+                    className="w-40 h-40 object-contain block"
+                  />
+                </div>
+                
+                <span className="mt-3.5 px-3 py-1 bg-slate-900 dark:bg-white text-white dark:text-slate-950 font-mono font-bold text-sm tracking-widest rounded-lg border border-slate-700">
+                  {qrBus.regNumber}
+                </span>
+
+                <div className="flex items-center space-x-2 mt-4 w-full">
+                  <button
+                    onClick={() => handlePrintQR(qrBus)}
+                    className="flex-1 px-3 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-neutral-100 dark:hover:bg-neutral-200 text-white dark:text-neutral-950 font-mono font-bold text-[11px] rounded-lg cursor-pointer transition-all flex items-center justify-center space-x-1.5"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    <span>Print QR</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      const shareUrl = `${window.location.origin}?busId=${qrBus.id}`;
+                      navigator.clipboard.writeText(shareUrl);
+                      alert('Copied secure vehicle inspection link to clipboard!');
+                    }}
+                    className="px-3 py-2 bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 hover:bg-slate-50 dark:hover:bg-neutral-800 text-slate-700 dark:text-neutral-200 font-mono font-bold text-[11px] rounded-lg cursor-pointer transition-all flex items-center justify-center space-x-1"
+                    title="Copy Link"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Right Column: Fleet Details & Fitness Records */}
+              <div className="md:col-span-7 flex flex-col justify-between space-y-4">
+                <div className="space-y-3">
+                  <h4 className="text-xs font-mono uppercase text-slate-400 font-bold tracking-wider">
+                    Vehicle Demographics
+                  </h4>
+                  
+                  <div className="grid grid-cols-2 gap-3.5 bg-slate-50/50 dark:bg-neutral-900/20 p-3 rounded-xl border border-slate-100 dark:border-neutral-900/60 text-xs font-mono">
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">MODEL</span>
+                      <span className="font-bold text-slate-800 dark:text-neutral-100 font-sans">{qrBus.model}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">CORRIDOR</span>
+                      <span className="font-bold text-slate-800 dark:text-neutral-100 font-sans">{qrBus.routeAssigned || 'Unassigned'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">PILOT</span>
+                      <span className="font-bold text-slate-800 dark:text-neutral-100 font-sans">{qrBus.driverName || 'N/A'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">CAPACITY</span>
+                      <span className="font-bold text-slate-800 dark:text-neutral-100">{qrBus.capacity} Seats</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-xs font-mono uppercase text-slate-400 font-bold tracking-wider mb-2">
+                      Active Fitness & Service Status
+                    </h4>
+                    
+                    <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-neutral-900/50 rounded-xl border border-slate-200/40 dark:border-neutral-800/40">
+                      <div>
+                        <span className="text-[10px] font-mono text-slate-400 block">NEXT SERVICE DUE</span>
+                        <span className="text-sm font-bold font-mono text-slate-900 dark:text-white">{qrBus.nextServiceDue}</span>
+                      </div>
+                      
+                      <span className={`px-2.5 py-1 text-xs font-mono font-bold rounded-full border inline-flex items-center space-x-1.5 ${
+                        getServiceStatus(qrBus.nextServiceDue) === 'Good'
+                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
+                          : getServiceStatus(qrBus.nextServiceDue) === 'Due'
+                          ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border-amber-200 dark:border-amber-800'
+                          : 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 border-rose-200 dark:border-rose-800'
+                      }`}>
+                        {getServiceStatus(qrBus.nextServiceDue) === 'Good' && <CheckCircle2 className="w-3.5 h-3.5" />}
+                        {getServiceStatus(qrBus.nextServiceDue) === 'Due' && <Clock className="w-3.5 h-3.5" />}
+                        {getServiceStatus(qrBus.nextServiceDue) === 'Overdue' && <AlertTriangle className="w-3.5 h-3.5 animate-bounce" />}
+                        <span>{getServiceStatus(qrBus.nextServiceDue)}</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sub-section: Service History Logs */}
+                <div className="space-y-2 pt-1">
+                  <h4 className="text-xs font-mono uppercase text-slate-400 font-bold tracking-wider flex items-center justify-between">
+                    <span>Recent Workshop Logs</span>
+                    <span className="text-[10px] text-blue-500 font-bold normal-case">
+                      {maintenanceRecords.filter(m => m.busId === qrBus.id).length} Logs
+                    </span>
+                  </h4>
+                  
+                  <div className="max-h-[140px] overflow-y-auto border border-slate-100 dark:border-neutral-800 rounded-xl divide-y divide-slate-100 dark:divide-neutral-800 text-[11px] bg-slate-50/20 dark:bg-neutral-900/10">
+                    {maintenanceRecords.filter(m => m.busId === qrBus.id).length === 0 ? (
+                      <p className="p-4 text-center text-slate-400 dark:text-neutral-500 font-mono">
+                        No service logs found for this vehicle.
+                      </p>
+                    ) : (
+                      maintenanceRecords
+                        .filter(m => m.busId === qrBus.id)
+                        .map((log) => (
+                          <div key={log.id} className="p-2.5 flex items-start justify-between gap-2.5 hover:bg-slate-50 dark:hover:bg-neutral-900/40">
+                            <div>
+                              <p className="font-bold text-slate-800 dark:text-neutral-200">{log.serviceType}</p>
+                              <p className="text-[10px] text-slate-400 dark:text-neutral-500 mt-0.5">
+                                Garage: {log.mechanicShop || 'Authorized Bay'} | {log.notes || 'No notes'}
+                              </p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="font-mono font-bold block text-slate-900 dark:text-white">{log.serviceDate}</span>
+                              <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 block font-bold">{formatINR(log.cost)}</span>
+                            </div>
+                          </div>
+                        ))
+                    )}
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end border-t border-slate-200 dark:border-neutral-800 pt-3.5 mt-5">
+              <button
+                type="button"
+                onClick={() => setQrBus(null)}
+                className="px-5 py-2 bg-slate-100 dark:bg-neutral-800 hover:bg-slate-200 dark:hover:bg-neutral-700 text-slate-800 dark:text-neutral-200 text-xs font-mono font-bold rounded-xl cursor-pointer"
+              >
+                Close Passport
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* INTERACTIVE SCANNER SIMULATOR MODAL */}
+      {isScannerOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-neutral-800 max-w-md w-full p-6 rounded-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-150 text-white">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3.5 border-b border-neutral-800 mb-4">
+              <div className="flex items-center space-x-2.5">
+                <div className="p-2 bg-amber-500/20 text-amber-400 rounded-xl">
+                  <Activity className="w-5 h-5 animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold font-sans">
+                    Virtual QR Scanner
+                  </h3>
+                  <p className="text-xs text-neutral-400 font-mono">
+                    Simulate physical decal inspection
+                  </p>
+                </div>
+              </div>
+              
+              <button
+                type="button"
+                onClick={() => setIsScannerOpen(false)}
+                className="p-1.5 text-neutral-400 hover:text-white rounded-xl cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex space-x-1.5 bg-neutral-950 p-1 rounded-xl mb-4 text-xs font-mono font-bold">
+              <button
+                onClick={() => {
+                  setScannerView('camera');
+                  setCameraScanning(false);
+                  setScannedResult(null);
+                }}
+                className={`flex-1 py-1.5 rounded-lg text-center cursor-pointer transition-all ${scannerView === 'camera' ? 'bg-neutral-800 text-white' : 'text-neutral-500'}`}
+              >
+                HUD Viewfinder
+              </button>
+              <button
+                onClick={() => {
+                  setScannerView('select');
+                  setCameraScanning(false);
+                  setScannedResult(null);
+                }}
+                className={`flex-1 py-1.5 rounded-lg text-center cursor-pointer transition-all ${scannerView === 'select' ? 'bg-neutral-800 text-white' : 'text-neutral-500'}`}
+              >
+                Target Select
+              </button>
+            </div>
+
+            {/* Viewport Box */}
+            <div className="relative h-64 bg-black rounded-2xl border-2 border-neutral-800 flex flex-col items-center justify-center overflow-hidden">
+              
+              {scannerView === 'camera' ? (
+                <>
+                  {/* Viewfinder borders */}
+                  <div className="absolute top-4 left-4 w-6 h-6 border-t-4 border-l-4 border-blue-500" />
+                  <div className="absolute top-4 right-4 w-6 h-6 border-t-4 border-r-4 border-blue-500" />
+                  <div className="absolute bottom-4 left-4 w-6 h-6 border-b-4 border-l-4 border-blue-500" />
+                  <div className="absolute bottom-4 right-4 w-6 h-6 border-b-4 border-r-4 border-blue-500" />
+
+                  {/* Red laser line */}
+                  <div className="absolute left-6 right-6 h-0.5 bg-rose-500/80 shadow-[0_0_8px_#ef4444] animate-bounce" style={{ animationDuration: '3s' }} />
+
+                  {cameraScanning ? (
+                    <div className="text-center space-y-3 animate-pulse">
+                      <div className="w-10 h-10 border-4 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto" />
+                      <p className="text-xs font-mono text-amber-400 uppercase tracking-widest font-bold">
+                        Parsing QR Payload...
+                      </p>
+                    </div>
+                  ) : scannedResult ? (
+                    <div className="text-center space-y-2.5 px-6 animate-in fade-in zoom-in-95">
+                      <div className="p-3 bg-emerald-500/20 text-emerald-400 rounded-full inline-block mx-auto">
+                        <CheckCircle2 className="w-8 h-8" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-white font-mono">{scannedResult.regNumber}</p>
+                        <p className="text-[10px] text-neutral-400 font-sans">{scannedResult.model}</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setIsScannerOpen(false);
+                          setQrBus(scannedResult);
+                        }}
+                        className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-mono font-bold text-xs rounded-lg cursor-pointer transition-colors"
+                      >
+                        View Fitness Passport
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="text-center space-y-4 px-6">
+                      <p className="text-xs text-neutral-400 font-mono">
+                        Hold camera up to the printed QR code decal, or simulate a scan below:
+                      </p>
+                      
+                      {buses.length > 0 ? (
+                        <div className="space-y-2 text-slate-900 dark:text-white">
+                          <span className="text-[10px] font-mono text-neutral-500 block uppercase font-bold text-center">
+                            Simulate physical scan of:
+                          </span>
+                          <div className="flex flex-col gap-1.5 max-h-24 overflow-y-auto p-1.5 bg-neutral-950 rounded-xl border border-neutral-800">
+                            {buses.map((b) => (
+                              <button
+                                key={b.id}
+                                type="button"
+                                onClick={() => {
+                                  setCameraScanning(true);
+                                  setTimeout(() => {
+                                    setCameraScanning(false);
+                                    setScannedResult(b);
+                                  }, 1500);
+                                }}
+                                className="px-2.5 py-1 bg-neutral-900 hover:bg-neutral-800 text-neutral-350 hover:text-white rounded-lg text-left font-mono text-[10px] truncate cursor-pointer flex items-center justify-between"
+                              >
+                                <span>{b.regNumber}</span>
+                                <span className="text-[9px] text-neutral-500 font-sans">{b.model}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-xs font-mono text-neutral-500">
+                          Please enroll a vehicle to test scanner.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-center px-6 space-y-4 w-full text-slate-900 dark:text-white">
+                  <p className="text-xs text-neutral-400 font-mono">
+                    Select a vehicle to pull up details manually as if scanned:
+                  </p>
+                  
+                  {buses.length > 0 ? (
+                    <div className="space-y-3.5 w-full">
+                      <select
+                        onChange={(e) => {
+                          const found = buses.find(b => b.id === e.target.value);
+                          if (found) {
+                            setIsScannerOpen(false);
+                            setQrBus(found);
+                          }
+                        }}
+                        defaultValue=""
+                        className="w-full px-3 py-2 text-xs font-mono font-bold bg-neutral-950 border border-neutral-800 rounded-xl text-white focus:outline-none focus:border-blue-500"
+                      >
+                        <option value="" disabled>-- Select Vehicle --</option>
+                        {buses.map(b => (
+                          <option key={b.id} value={b.id} className="text-white bg-neutral-900">
+                            {b.regNumber} ({b.model})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : (
+                    <p className="text-xs font-mono text-neutral-500">
+                      No vehicles enrolled in your carrier pool yet.
+                    </p>
+                  )}
+                </div>
+              )}
+
+            </div>
+
+            {/* Footer info text */}
+            <p className="text-[10px] text-center text-neutral-500 font-mono mt-3.5">
+              Powered by Tranzit Automated Fleet Inspection
+            </p>
+
           </div>
         </div>
       )}
