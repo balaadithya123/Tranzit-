@@ -5,6 +5,7 @@ import { getSavedLocalOwner, saveLocalOwner } from './lib/firebaseAuthHelper';
 import { doc, onSnapshot, getDoc, setDoc, collection, query, where } from 'firebase/firestore';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { db, auth } from './lib/firebase';
+import { LandingPage } from './components/LandingPage';
 import { AuthView } from './components/AuthView';
 import { LowerNavBar } from './components/LowerNavBar';
 import { Sidebar } from './components/Sidebar';
@@ -33,6 +34,7 @@ const AdminPricingSettingsView = lazy(() => import('./components/AdminPricingSet
 function MainApp() {
   const [currentOwner, setCurrentOwner] = useState<OwnerProfile | null>(null);
   const [activeTab, setActiveTab] = useState<string>('overview');
+  const [showLanding, setShowLanding] = useState(true);
   const [initializing, setInitializing] = useState(true);
   const [urlBusId, setUrlBusId] = useState<string | null>(() => {
     try {
@@ -383,7 +385,38 @@ function MainApp() {
   }
 
   if (!currentOwner) {
-    return <AuthView onLoginSuccess={handleLoginSuccess} />;
+    if (showLanding) {
+      return (
+        <LandingPage
+          onNavigateToAuth={() => setShowLanding(false)}
+          onNavigateToDemo={async (demoType) => {
+            setShowLanding(false);
+            try {
+              const demoEmail = demoType === 'SaaS' ? DEMO_SaaS_EMAIL : DEMO_LEASE_EMAIL;
+              const { loginOrRegisterWithFallback } = await import('./lib/firebaseAuthHelper');
+              const profile = await loginOrRegisterWithFallback({
+                email: demoEmail,
+                planType: demoType
+              });
+              handleLoginSuccess(profile);
+            } catch (err) {
+              console.warn("Demo access notice:", err);
+            }
+          }}
+        />
+      );
+    }
+    return (
+      <div className="relative">
+        <button
+          onClick={() => setShowLanding(true)}
+          className="fixed top-4 left-4 z-50 px-3 py-1.5 text-xs font-mono font-bold text-slate-400 hover:text-white bg-slate-900/80 hover:bg-slate-800 border border-slate-700 rounded-xl transition-all cursor-pointer"
+        >
+          ← Back to Home
+        </button>
+        <AuthView onLoginSuccess={handleLoginSuccess} />
+      </div>
+    );
   }
 
   const isSaaS = currentOwner.planType === 'SaaS';
